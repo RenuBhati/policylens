@@ -1,7 +1,7 @@
 # PolicyLens — Product Requirements Document
 
-Status: MVP implemented and locally verified; public deployment and browser verification pending  
-Date: 9 October 2026  
+Status: MVP implemented and locally verified; public deployment and browser verification pending
+Date: 9 October 2026
 Audience: early-career developers, platform engineers, security reviewers
 
 ## 1. Product goal

@@ -114,6 +114,6 @@ The runtime container uses a non-root UID, read-only filesystem and writable tem
 - `internal/policy/sources/LICENSE`: original upstream Apache 2.0 license.
 - `NOTICE`: attribution and authorship boundaries.
 
-Kyverno: https://github.com/kyverno/policies  
-Kubernetes standards: https://kubernetes.io/docs/concepts/security/pod-security-standards/  
+Kyverno: https://github.com/kyverno/policies
+Kubernetes standards: https://kubernetes.io/docs/concepts/security/pod-security-standards/
 Ollama API: https://docs.ollama.com/api/chat

@@ -35,7 +35,9 @@ Date: 9 October 2026
 | Installer shell syntax and idempotent installed-engine path | Passed |
 | Git diff whitespace validation | Passed |
 
-These are local results. The repository workflow provides independent Linux CI; its status is visible on GitHub.
+One local live check reported 735 ms for the failing Pod and 576 ms for the corrected Pod. These are individual sample timings, not a load benchmark.
+
+Independent Linux CI also passed setup, race tests, Go vet, builds and retrieval evaluation in 1m42s on implementation commit `1d79316`. [Verified GitHub Actions run](https://github.com/RenuBhati/policylens/actions/runs/37919953461).
 
 ## Retrieval evaluation
 
