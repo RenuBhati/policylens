@@ -23,6 +23,7 @@ type Policy struct {
 	Summary  string `json:"summary"`
 }
 type Answer struct {
+	Model     string   `json:"model,omitempty"`
 	Text      string   `json:"answer"`
 	Citations []string `json:"citations"`
 	Mode      string   `json:"mode"`
@@ -54,7 +55,7 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("PolicyLens HTTP %d: %s (request %s)", e.Status, e.Message, e.RequestID)
 }
 func New(baseURL string) *Client {
-	return &Client{BaseURL: strings.TrimRight(baseURL, "/"), HTTP: &http.Client{Timeout: 55 * time.Second}}
+	return &Client{BaseURL: strings.TrimRight(baseURL, "/"), HTTP: &http.Client{Timeout: 75 * time.Second}}
 }
 func (c *Client) request(ctx context.Context, method, path string, input, output any) error {
 	var body io.Reader
@@ -74,7 +75,7 @@ func (c *Client) request(ctx context.Context, method, path string, input, output
 	}
 	client := c.HTTP
 	if client == nil {
-		client = &http.Client{Timeout: 55 * time.Second}
+		client = &http.Client{Timeout: 75 * time.Second}
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -107,5 +108,12 @@ func (c *Client) Ask(ctx context.Context, question, policyID string) (Answer, er
 func (c *Client) Check(ctx context.Context, manifest string) (Check, error) {
 	var result Check
 	err := c.request(ctx, "POST", "/api/check", map[string]string{"manifest": manifest}, &result)
+	return result, err
+}
+
+// AskWithMode compares retrieved excerpts with generated answers.
+func (c *Client) AskWithMode(ctx context.Context, question, policyID, mode string) (Answer, error) {
+	var result Answer
+	err := c.request(ctx, "POST", "/api/ask", map[string]string{"question": question, "policy_id": policyID, "mode": mode}, &result)
 	return result, err
 }

@@ -15,7 +15,15 @@ type Passage struct {
 	URL      string  `json:"url"`
 	Score    float64 `json:"score"`
 }
+type Usage struct {
+	PromptTokens     int     `json:"prompt_tokens"`
+	CompletionTokens int     `json:"completion_tokens"`
+	TotalTokens      int     `json:"total_tokens"`
+	Neurons          float64 `json:"neurons"`
+}
 type Answer struct {
+	Model     string    `json:"model,omitempty"`
+	Usage     *Usage    `json:"usage,omitempty"`
 	Text      string    `json:"answer"`
 	Citations []string  `json:"citations"`
 	Evidence  []Passage `json:"evidence"`

@@ -14,6 +14,8 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -30,17 +32,26 @@ type Config struct {
 	OllamaURL   string
 	OllamaModel string
 	RateLimit   int
+	AIProvider  string
+	CFModel     string
+	CFPath      string
+	ModelBudget int
 }
 type Service struct {
-	Catalog    *policy.Catalog
-	Engine     *policy.Engine
-	Provider   *policy.Provider
-	config     Config
-	limiter    *limiter
-	modelSlots chan struct{}
-	checks     atomic.Uint64
-	questions  atomic.Uint64
-	requests   atomic.Uint64
+	Catalog     *policy.Catalog
+	Engine      *policy.Engine
+	Provider    *policy.Provider
+	config      Config
+	limiter     *limiter
+	modelSlots  chan struct{}
+	checks      atomic.Uint64
+	questions   atomic.Uint64
+	requests    atomic.Uint64
+	modelCalls  atomic.Uint64
+	modelErrors atomic.Uint64
+	budgetMu    sync.Mutex
+	budgetDay   string
+	budgetUsed  int
 }
 type bucket struct {
 	start time.Time
@@ -83,7 +94,39 @@ func New(cfg Config) (*Service, error) {
 	if cfg.RateLimit <= 0 {
 		cfg.RateLimit = 60
 	}
+	if cfg.ModelBudget <= 0 {
+		cfg.ModelBudget = 40
+	}
+	if cfg.AIProvider != "" && cfg.AIProvider != "cloudflare" && cfg.AIProvider != "ollama" {
+		return nil, fmt.Errorf("unknown AI_PROVIDER")
+	}
+	if cfg.AIProvider == "ollama" && cfg.OllamaModel == "" {
+		return nil, fmt.Errorf("OLLAMA_MODEL is required")
+	}
+	if cfg.AIProvider == "cloudflare" && cfg.OllamaModel != "" {
+		return nil, fmt.Errorf("choose one model provider")
+	}
 	s := &Service{Catalog: c, Engine: policy.NewEngine(cfg.EnginePath, c), config: cfg, limiter: &limiter{entries: map[string]bucket{}, limit: cfg.RateLimit}, modelSlots: make(chan struct{}, 2)}
+	if cfg.AIProvider == "cloudflare" {
+		if cfg.CFPath == "" {
+			cfg.CFPath = "cf"
+		}
+		path, err := exec.LookPath(cfg.CFPath)
+		if err != nil {
+			return nil, fmt.Errorf("Cloudflare CLI is unavailable")
+		}
+		path, err = filepath.Abs(path)
+		if err != nil {
+			return nil, fmt.Errorf("invalid Cloudflare CLI path")
+		}
+		if cfg.CFModel == "" {
+			cfg.CFModel = "@cf/meta/llama-3.1-8b-instruct-fp8"
+		}
+		if !strings.HasPrefix(cfg.CFModel, "@cf/") || len(cfg.CFModel) > 160 {
+			return nil, fmt.Errorf("invalid CF_AI_MODEL")
+		}
+		s.Provider = &policy.Provider{Backend: "cloudflare", CLIPath: path, Model: cfg.CFModel}
+	}
 	if cfg.OllamaModel != "" {
 		if cfg.OllamaURL == "" {
 			cfg.OllamaURL = "http://127.0.0.1:11434"
@@ -142,17 +185,24 @@ func (s *Service) Handler() http.Handler {
 	mux.HandleFunc("GET /api/status", func(w http.ResponseWriter, r *http.Request) {
 		mode := "excerpts"
 		if s.Provider != nil {
-			mode = "ollama"
+			mode = s.Provider.Mode()
 		}
-		writeJSON(w, 200, map[string]any{"engine_available": s.Engine.Path != "", "engine_version": policy.EngineVersion, "answer_mode": mode, "model": s.config.OllamaModel, "policy_count": len(s.Catalog.Policies), "provenance": s.Catalog.Provenance})
+		writeJSON(w, 200, map[string]any{"engine_available": s.Engine.Path != "", "engine_version": policy.EngineVersion, "answer_mode": mode, "model": func() string {
+			if s.Provider != nil {
+				return s.Provider.Model
+			}
+			return ""
+		}(), "model_budget": s.modelBudgetStatus(), "policy_count": len(s.Catalog.Policies), "provenance": s.Catalog.Provenance})
 	})
 	mux.HandleFunc("GET /api/policies", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, s.Catalog.Policies) })
 	mux.HandleFunc("GET /api/examples", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, policy.LoadExamples()) })
 	mux.HandleFunc("POST /api/check", s.check)
 	mux.HandleFunc("POST /api/ask", s.ask)
+	mux.HandleFunc("POST /api/explain", s.explain)
 	mux.HandleFunc("GET /metrics", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; version=0.0.4")
 		fmt.Fprintf(w, "# TYPE policylens_requests_total counter\npolicylens_requests_total %d\n# TYPE policylens_checks_total counter\npolicylens_checks_total %d\n# TYPE policylens_questions_total counter\npolicylens_questions_total %d\n", s.requests.Load(), s.checks.Load(), s.questions.Load())
+		fmt.Fprintf(w, "# TYPE policylens_model_calls_total counter\npolicylens_model_calls_total %d\n# TYPE policylens_model_errors_total counter\npolicylens_model_errors_total %d\n", s.modelCalls.Load(), s.modelErrors.Load())
 	})
 	files, _ := fs.Sub(web, "web/dist")
 	fileServer := http.FileServer(http.FS(files))
@@ -213,6 +263,7 @@ func (s *Service) ask(w http.ResponseWriter, r *http.Request) {
 	var in struct {
 		Question string `json:"question"`
 		PolicyID string `json:"policy_id"`
+		Mode     string `json:"mode"`
 	}
 	if err := decode(w, r, &in); err != nil {
 		var max *http.MaxBytesError
@@ -234,27 +285,22 @@ func (s *Service) ask(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	if in.Mode != "" && in.Mode != "excerpts" && in.Mode != "generated" {
+		fail(w, r, 400, "mode must be excerpts or generated")
+		return
+	}
+	if in.Mode == "generated" && s.Provider == nil {
+		fail(w, r, 503, "AI provider is not configured")
+		return
+	}
 	s.questions.Add(1)
 	evidence := s.Catalog.Retrieve(in.Question, in.PolicyID, 3)
 	answer := policy.Excerpts(evidence)
-	if s.Provider != nil && len(evidence) > 0 {
-		ctx, cancel := context.WithTimeout(r.Context(), 45*time.Second)
-		defer cancel()
-		select {
-		case s.modelSlots <- struct{}{}:
-			defer func() { <-s.modelSlots }()
-		case <-ctx.Done():
-			fail(w, r, 504, "model queue timed out")
-			return
-		}
+	if s.Provider != nil && in.Mode != "excerpts" && len(evidence) > 0 {
 		var err error
-		answer, err = s.Provider.Generate(ctx, in.Question, evidence)
+		answer, err = s.generate(r.Context(), in.Question, evidence)
 		if err != nil {
-			if errors.Is(err, context.DeadlineExceeded) {
-				fail(w, r, 504, "model request timed out")
-			} else {
-				fail(w, r, 502, "model failed or returned invalid citations; retry or use source-excerpt mode")
-			}
+			s.modelFailure(w, r, err)
 			return
 		}
 	}

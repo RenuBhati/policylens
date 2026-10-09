@@ -1,4 +1,4 @@
-.PHONY: setup ui engine test vet build run eval share
+.PHONY: setup ui engine test vet build run eval share run-ai
 
 export GOCACHE := $(CURDIR)/.cache/go-build
 export GOPATH := $(CURDIR)/.cache/go-path
@@ -28,6 +28,9 @@ build:
 
 run:
 	go run ./cmd/server
+
+run-ai:
+	AI_PROVIDER=cloudflare go run ./cmd/server
 
 eval:
 	go run ./cmd/eval

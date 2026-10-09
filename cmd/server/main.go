@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -15,7 +16,16 @@ import (
 
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
-	s, err := server.New(server.Config{EnginePath: os.Getenv("KYVERNO_BIN"), OllamaURL: os.Getenv("OLLAMA_URL"), OllamaModel: os.Getenv("OLLAMA_MODEL")})
+	budget := 40
+	if value := os.Getenv("AI_DAILY_CALL_LIMIT"); value != "" {
+		parsed, err := strconv.Atoi(value)
+		if err != nil || parsed < 1 || parsed > 100 {
+			slog.Error("AI_DAILY_CALL_LIMIT must be between 1 and 100")
+			os.Exit(1)
+		}
+		budget = parsed
+	}
+	s, err := server.New(server.Config{EnginePath: os.Getenv("KYVERNO_BIN"), OllamaURL: os.Getenv("OLLAMA_URL"), OllamaModel: os.Getenv("OLLAMA_MODEL"), AIProvider: os.Getenv("AI_PROVIDER"), CFModel: os.Getenv("CF_AI_MODEL"), CFPath: os.Getenv("CF_BIN"), ModelBudget: budget})
 	if err != nil {
 		slog.Error("startup failed", "error", err)
 		os.Exit(1)
@@ -24,7 +34,7 @@ func main() {
 	if addr == "" {
 		addr = "127.0.0.1:8080"
 	}
-	srv := &http.Server{Addr: addr, Handler: s.Handler(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 55 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
+	srv := &http.Server{Addr: addr, Handler: s.Handler(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 75 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	go func() {
