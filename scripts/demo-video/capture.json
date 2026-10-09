@@ -1,0 +1,424 @@
+{
+  "captured_at": "2026-10-09T11:11:24.225443+00:00",
+  "policies": [
+    {
+      "id": "disallow-privileged-containers",
+      "title": "Keep containers unprivileged",
+      "category": "Baseline security",
+      "summary": "Prevent containers from requesting privileged access to the host.",
+      "rule": "The privileged field must be false or omitted in every regular, init and ephemeral container.",
+      "rationale": "Privileged mode removes important isolation mechanisms and grants extensive host access. This rule is derived from the Kubernetes Baseline Pod Security Standard.",
+      "scope": "Checks container configuration only. It does not assess every Baseline control or prove complete Pod Security Standards compliance.",
+      "field": "securityContext.privileged",
+      "fix": "Set securityContext.privileged to false, or omit that field.",
+      "question": "Can a container request privileged access?",
+      "definition": "apiVersion: policies.kyverno.io/v1\nkind: ValidatingPolicy\nmetadata:\n  name: disallow-privileged-containers\n  annotations:\n    policies.kyverno.io/title: Disallow Privileged Containers in ValidatingPolicy\n    policies.kyverno.io/category: Pod Security Standards (Baseline) in ValidatingPolicy\n    policies.kyverno.io/severity: medium\n    policies.kyverno.io/subject: Pod\n    policies.kyverno.io/minversion: 1.17.0\n    kyverno.io/kyverno-version: 1.14.0\n    kyverno.io/kubernetes-version: \"1.30+\"\n    policies.kyverno.io/description: >-\n      Privileged mode disables most security mechanisms and must not be allowed. This policy\n      ensures Pods do not call for privileged mode.\nspec:\n  validationActions:\n     - Audit\n  evaluation:\n    background:\n      enabled: true\n  matchConstraints:\n    resourceRules:\n      - apiGroups:   [\"\"]\n        apiVersions: [\"v1\"]\n        operations:  [\"CREATE\", \"UPDATE\"]\n        resources:   [\"pods\"]\n  variables:\n  - name: allContainers\n    expression: >-\n      object.spec.containers + \n      object.spec.?initContainers.orValue([]) + \n      object.spec.?ephemeralContainers.orValue([])\n  validations:\n    - expression: \"variables.allContainers.all(container, container.?securityContext.?privileged.orValue(false) == false)\"\n      message: \"Privileged mode is disallowed. All containers must set the securityContext.privileged field to `false` or unset the field.\"",
+      "source": {
+        "file": "disallow-privileged-containers.yaml",
+        "path": "pod-security-vpol/baseline/disallow-privileged-containers/disallow-privileged-containers.yaml",
+        "url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/pod-security-vpol/baseline/disallow-privileged-containers/disallow-privileged-containers.yaml",
+        "sha256": "cc7246f60220ca668cef9e1b2e9bc67e92185e5765ed9a8d7caed3fb71908e52"
+      }
+    },
+    {
+      "id": "require-run-as-nonroot",
+      "title": "Require non-root execution",
+      "category": "Restricted security",
+      "summary": "Declare that your application must run without the root user.",
+      "rule": "Set spec.securityContext.runAsNonRoot to true with no container override to false, or set runAsNonRoot to true on every regular, init and ephemeral container.",
+      "rationale": "Non-root execution reduces the privileges available to a compromised process. The rule is derived from the Kubernetes Restricted Pod Security Standard.",
+      "scope": "The offline check inspects the declaration. It does not run the image or verify its user ID. This collection covers a subset of Restricted controls.",
+      "field": "securityContext.runAsNonRoot",
+      "fix": "Set runAsNonRoot: true in the Pod securityContext and remove conflicting container overrides.",
+      "question": "Where should I set runAsNonRoot?",
+      "definition": "apiVersion: policies.kyverno.io/v1\nkind: ValidatingPolicy\nmetadata:\n  name: require-run-as-nonroot\n  annotations:\n    policies.kyverno.io/title: Require runAsNonRoot in ValidatingPolicy\n    policies.kyverno.io/category: Pod Security Standards (Restricted) in ValidatingPolicy\n    policies.kyverno.io/severity: medium\n    policies.kyverno.io/subject: Pod\n    policies.kyverno.io/minversion: 1.17.0\n    kyverno.io/kyverno-version: 1.14.0\n    kyverno.io/kubernetes-version: \"1.30+\"\n    policies.kyverno.io/description: >-\n      Containers must be required to run as non-root. This policy ensures\n      `runAsNonRoot` is set to true.\nspec:\n  validationActions:\n     - Audit\n  evaluation:\n    background:\n      enabled: true\n  matchConstraints:\n    resourceRules:\n      - apiGroups:   [\"\"]\n        apiVersions: [\"v1\"]\n        operations:  [\"CREATE\", \"UPDATE\"]\n        resources:   [\"pods\"]\n  variables:\n   - name: ctnrs\n     expression: >-\n      object.spec.containers + \n      object.spec.?initContainers.orValue([]) + \n      object.spec.?ephemeralContainers.orValue([])\n  validations:\n    - expression: >-\n        (object.spec.?securityContext.?runAsNonRoot.orValue(false) == true\n          && variables.ctnrs.all(c, c.?securityContext.?runAsNonRoot.orValue(true) == true))\n          || variables.ctnrs.all(c, c.?securityContext.?runAsNonRoot.orValue(false) == true)\n      message: >-\n        Running as root is not allowed. Either spec.securityContext.runAsNonRoot \n        must be set to true, or all containers (spec.containers[*], spec.initContainers[*], \n        spec.ephemeralContainers[*]) must have securityContext.runAsNonRoot set to true.\n",
+      "source": {
+        "file": "require-run-as-nonroot.yaml",
+        "path": "pod-security-vpol/restricted/require-run-as-nonroot/require-run-as-nonroot.yaml",
+        "url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/pod-security-vpol/restricted/require-run-as-nonroot/require-run-as-nonroot.yaml",
+        "sha256": "61b7c5142a719b5c9a0cb8bb99eabcc428e636bbb72386008cb4f09057e985f6"
+      }
+    },
+    {
+      "id": "disallow-privilege-escalation",
+      "title": "Block privilege escalation",
+      "category": "Restricted security",
+      "summary": "Prevent a process from gaining additional privileges after it starts.",
+      "rule": "Every regular, init and ephemeral container must explicitly set securityContext.allowPrivilegeEscalation to false. Omitting the field fails this bundled rule.",
+      "rationale": "Processes can gain privileges through mechanisms such as set-user-ID programs. This rule expresses a privilege-escalation control associated with Restricted Pod security.",
+      "scope": "This is the exact bundled Kyverno rule. Offline validation reports configuration compliance, not runtime behavior or full cluster security.",
+      "field": "securityContext.allowPrivilegeEscalation",
+      "fix": "Add allowPrivilegeEscalation: false to the securityContext of each container.",
+      "question": "Why must allowPrivilegeEscalation be false?",
+      "definition": "apiVersion: policies.kyverno.io/v1\nkind: ValidatingPolicy\nmetadata:\n  name: disallow-privilege-escalation\n  annotations:\n    policies.kyverno.io/title: Disallow Privilege Escalation in ValidatingPolicy\n    policies.kyverno.io/category: Pod Security Standards (Restricted) in ValidatingPolicy\n    policies.kyverno.io/severity: medium\n    policies.kyverno.io/subject: Pod\n    policies.kyverno.io/minversion: 1.17.0\n    kyverno.io/kyverno-version: 1.14.0\n    kyverno.io/kubernetes-version: \"1.30+\"\n    policies.kyverno.io/description: >-\n      Privilege escalation, such as via set-user-ID or set-group-ID file mode, should not be allowed.\n      This policy ensures the `allowPrivilegeEscalation` field is set to `false`.\nspec:\n  validationActions:\n     - Audit\n  evaluation:\n    background:\n      enabled: true\n  matchConstraints:\n    resourceRules:\n      - apiGroups:   [\"\"]\n        apiVersions: [\"v1\"]\n        operations:  [\"CREATE\", \"UPDATE\"]\n        resources:   [\"pods\"]\n  variables:\n    - name: allContainers\n      expression: >-\n        object.spec.containers + \n        object.spec.?initContainers.orValue([]) + \n        object.spec.?ephemeralContainers.orValue([])\n  validations:\n    - expression: >- \n        variables.allContainers.all(container, \n        container.?securityContext.allowPrivilegeEscalation.orValue(true) == false)\n      message: >-\n        Privilege escalation is disallowed. \n        All containers must set the securityContext.allowPrivilegeEscalation field to `false`.\n",
+      "source": {
+        "file": "disallow-privilege-escalation.yaml",
+        "path": "pod-security-vpol/restricted/disallow-privilege-escalation/disallow-privilege-escalation.yaml",
+        "url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/pod-security-vpol/restricted/disallow-privilege-escalation/disallow-privilege-escalation.yaml",
+        "sha256": "472536c045db34e54d761902da061116b0f69c0705f4ab61959dfabbe3db55ef"
+      }
+    },
+    {
+      "id": "disallow-latest-tag",
+      "title": "Use an explicit image version",
+      "category": "Team convention",
+      "summary": "Reject untagged images and the latest image tag in this example pack.",
+      "rule": "The bundled rule checks that each regular container image contains a colon and does not end with :latest.",
+      "rationale": "A latest tag can resolve to a different image over time, making releases harder to reproduce. Explicit version tags improve traceability, although tags can still be mutable; image digests provide stronger identity.",
+      "scope": "This is a selected best-practice rule, not a Kubernetes Pod Security Standards requirement. This upstream expression inspects regular containers, uses simple string checks, and is not a complete image-reference parser.",
+      "field": "spec.containers[*].image",
+      "fix": "Use an explicit application version such as eu.foo.io/example/payment-api:1.0.0.",
+      "question": "Why does this policy reject the latest tag?",
+      "definition": "apiVersion: policies.kyverno.io/v1\nkind: ValidatingPolicy\nmetadata:\n  name: disallow-latest-tag\n  annotations:\n    policies.kyverno.io/title: Disallow Latest Tag in VPOL\n    policies.kyverno.io/category: Best Practices in VPOL\n    policies.kyverno.io/minversion: 1.17.0\n    kyverno.io/kubernetes-version: \"1.30\"\n    policies.kyverno.io/severity: medium\n    policies.kyverno.io/subject: Pod\n    policies.kyverno.io/description: >-\n      The ':latest' tag is mutable and can lead to unexpected errors if the\n      image changes. A best practice is to use an immutable tag that maps to\n      a specific version of an application Pod. This policy validates that the image\n      specifies a tag and that it is not called `latest`.\nspec:\n  validationActions: [Audit]\n  evaluation: \n     background: \n           enabled: true\n  matchConstraints:\n        resourceRules:\n          - apiGroups: ['']\n            apiVersions: [v1]\n            operations: [CREATE, UPDATE]\n            resources: [pods]\n  validations:\n          - expression: \"object.spec.containers.all(container, container.image.contains(':'))\"\n            message: \"An image tag is required.\"\n          - expression: \"object.spec.containers.all(container, !container.image.endsWith(':latest'))\"\n            message: \"Using a mutable image tag e.g. 'latest' is not allowed.\"\n\n",
+      "source": {
+        "file": "disallow-latest-tag.yaml",
+        "path": "best-practices-vpol/disallow-latest-tag/disallow-latest-tag.yaml",
+        "url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/best-practices-vpol/disallow-latest-tag/disallow-latest-tag.yaml",
+        "sha256": "fc49a94817297938131fb05f4237aaa3107171a7c4a110aad0b0deca1b7ecba2"
+      }
+    },
+    {
+      "id": "restrict-image-registries",
+      "title": "Use an approved image registry",
+      "category": "Team convention",
+      "summary": "Allow images from the two example registries configured in the public policy.",
+      "rule": "Every regular, init and ephemeral container image must start with eu.foo.io/ or bar.io/ in this bundled example policy.",
+      "rationale": "Teams can restrict image sources to registries they review and manage. An approved registry is a configurable team decision, not a universal Kubernetes requirement.",
+      "scope": "eu.foo.io and bar.io are upstream example values, not recommended production registries. The checker performs no image pull, signature verification or vulnerability scan.",
+      "field": "containers[*].image",
+      "fix": "For this demo, use the example prefix eu.foo.io/. A real policy pack must configure its own approved registries.",
+      "question": "Which image registries are allowed in this demo?",
+      "definition": "apiVersion: policies.kyverno.io/v1\nkind: ValidatingPolicy\nmetadata:\n  name: restrict-image-registries\n  annotations:\n    policies.kyverno.io/title: Restrict Image Registries in VPOL\n    policies.kyverno.io/category: Best Practices, EKS Best Practices in VPOL\n    policies.kyverno.io/severity: medium\n    policies.kyverno.io/minversion: 1.17.0\n    kyverno.io/kubernetes-version: \"1.30\"\n    policies.kyverno.io/subject: Pod\n    policies.kyverno.io/description: >-\n      Images from unknown, public registries can be of dubious quality and may not be\n      scanned and secured, representing a high degree of risk. Requiring use of known, approved\n      registries helps reduce threat exposure by ensuring image pulls only come from them. This\n      policy validates that container images only originate from the registry `eu.foo.io` or\n      `bar.io`. Use of this policy requires customization to define your allowable registries.\nspec:\n  validationActions: [Audit]\n  evaluation: \n     background: \n           enabled: true\n  matchConstraints:\n        resourceRules:\n          - apiGroups: [\"\"]\n            apiVersions: [\"v1\"]\n            operations: [\"CREATE\", \"UPDATE\"]\n            resources: [\"pods\", \"pods/ephemeralcontainers\"] \n  variables:\n          - name: allContainers\n            expression: \"object.spec.containers + object.spec.?initContainers.orValue([]) + object.spec.?ephemeralContainers.orValue([])\"\n  validations:\n          - expression: \"variables.allContainers.all(container, container.image.startsWith('eu.foo.io/') || container.image.startsWith('bar.io/'))\"\n            message: \"Unknown image registry.\"\n\n",
+      "source": {
+        "file": "restrict-image-registries.yaml",
+        "path": "best-practices-vpol/restrict-image-registries/restrict-image-registries.yaml",
+        "url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/best-practices-vpol/restrict-image-registries/restrict-image-registries.yaml",
+        "sha256": "7d26596c5c9cb09295ff6af31af137f1501113bfd89fa9b3fd914af6fc857758"
+      }
+    },
+    {
+      "id": "require-labels",
+      "title": "Give every application a name",
+      "category": "Team convention",
+      "summary": "Identify the application consistently so tools can find and group its Pods.",
+      "rule": "Every Pod must have the label app.kubernetes.io/name with a non-empty value.",
+      "rationale": "Application labels make resources easier to query and associate with tooling. This example is an organisational convention rather than a Pod Security Standards control.",
+      "scope": "This checks the presence and non-empty value of one label. It does not enforce all recommended Kubernetes labels or identify a resource owner.",
+      "field": "metadata.labels.app.kubernetes.io/name",
+      "fix": "Add metadata.labels with app.kubernetes.io/name: payment-api.",
+      "question": "Which application label is required?",
+      "definition": "apiVersion: policies.kyverno.io/v1\nkind: ValidatingPolicy\nmetadata:\n  annotations:\n    policies.kyverno.io/category: Best Practices\n    policies.kyverno.io/description: >-\n      Enforce the presence of required labels that identify semantic attributes\n      of applications or Deployments. Specifically, ensure that the standard\n      label `app.kubernetes.io/name` is present on Pods with a non-empty value\n      to enable consistent tooling and querying capabilities.\n    policies.kyverno.io/severity: medium\n    policies.kyverno.io/title: Require Labels\n  name: require-labels\nspec:\n  evaluation:\n    background:\n      enabled: true\n  matchConstraints:\n    resourceRules:\n      - apiGroups:\n          - ''\n        apiVersions:\n          - v1\n        operations:\n          - CREATE\n          - UPDATE\n        resources:\n          - pods\n  validationActions:\n    - Audit\n  validations:\n    - expression: >-\n        has(object.metadata.labels) && 'app.kubernetes.io/name' in\n        object.metadata.labels &&\n        object.metadata.labels['app.kubernetes.io/name'] != ''\n      messageExpression: >-\n        'Pod ' + object.metadata.name + ' must have the label\n        app.kubernetes.io/name with a non-empty value. Found labels: ' +\n        (has(object.metadata.labels) ? string(object.metadata.labels) : 'none')\n",
+      "source": {
+        "file": "require-labels.yaml",
+        "path": "best-practices-vpol/require-labels/require-labels.yaml",
+        "url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/best-practices-vpol/require-labels/require-labels.yaml",
+        "sha256": "01e9924b278a86b6934381de2621b20c3f85ab18b34975c7bb4d04f8c9de8dfa"
+      }
+    }
+  ],
+  "examples": {
+    "failing": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: payment-api\nspec:\n  containers:\n    - name: api\n      image: docker.io/example/payment-api:latest\n      securityContext:\n        privileged: true\n        runAsNonRoot: false\n        allowPrivilegeEscalation: true\n",
+    "passing": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: payment-api\n  labels:\n    app.kubernetes.io/name: payment-api\nspec:\n  securityContext:\n    runAsNonRoot: true\n  containers:\n    - name: api\n      image: eu.foo.io/example/payment-api:1.0.0\n      securityContext:\n        privileged: false\n        allowPrivilegeEscalation: false\n"
+  },
+  "status": {
+    "answer_mode": "excerpts",
+    "engine_available": true,
+    "engine_version": "1.19.1",
+    "model": "",
+    "policy_count": 6,
+    "provenance": {
+      "repository": "https://github.com/kyverno/policies",
+      "revision": "ec478cb5996376c0d2f09520675805a8e33297c9",
+      "engine": "1.19.1",
+      "sources": [
+        {
+          "file": "disallow-privileged-containers.yaml",
+          "path": "pod-security-vpol/baseline/disallow-privileged-containers/disallow-privileged-containers.yaml",
+          "url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/pod-security-vpol/baseline/disallow-privileged-containers/disallow-privileged-containers.yaml",
+          "sha256": "cc7246f60220ca668cef9e1b2e9bc67e92185e5765ed9a8d7caed3fb71908e52"
+        },
+        {
+          "file": "require-run-as-nonroot.yaml",
+          "path": "pod-security-vpol/restricted/require-run-as-nonroot/require-run-as-nonroot.yaml",
+          "url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/pod-security-vpol/restricted/require-run-as-nonroot/require-run-as-nonroot.yaml",
+          "sha256": "61b7c5142a719b5c9a0cb8bb99eabcc428e636bbb72386008cb4f09057e985f6"
+        },
+        {
+          "file": "disallow-privilege-escalation.yaml",
+          "path": "pod-security-vpol/restricted/disallow-privilege-escalation/disallow-privilege-escalation.yaml",
+          "url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/pod-security-vpol/restricted/disallow-privilege-escalation/disallow-privilege-escalation.yaml",
+          "sha256": "472536c045db34e54d761902da061116b0f69c0705f4ab61959dfabbe3db55ef"
+        },
+        {
+          "file": "disallow-latest-tag.yaml",
+          "path": "best-practices-vpol/disallow-latest-tag/disallow-latest-tag.yaml",
+          "url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/best-practices-vpol/disallow-latest-tag/disallow-latest-tag.yaml",
+          "sha256": "fc49a94817297938131fb05f4237aaa3107171a7c4a110aad0b0deca1b7ecba2"
+        },
+        {
+          "file": "restrict-image-registries.yaml",
+          "path": "best-practices-vpol/restrict-image-registries/restrict-image-registries.yaml",
+          "url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/best-practices-vpol/restrict-image-registries/restrict-image-registries.yaml",
+          "sha256": "7d26596c5c9cb09295ff6af31af137f1501113bfd89fa9b3fd914af6fc857758"
+        },
+        {
+          "file": "require-labels.yaml",
+          "path": "best-practices-vpol/require-labels/require-labels.yaml",
+          "url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/best-practices-vpol/require-labels/require-labels.yaml",
+          "sha256": "01e9924b278a86b6934381de2621b20c3f85ab18b34975c7bb4d04f8c9de8dfa"
+        }
+      ]
+    }
+  },
+  "failing": {
+    "engine": "Kyverno 1.19.1",
+    "revision": "ec478cb5996376c0d2f09520675805a8e33297c9",
+    "resource": "payment-api",
+    "results": [
+      {
+        "policy_id": "disallow-privileged-containers",
+        "title": "Keep containers unprivileged",
+        "status": "fail",
+        "message": "Privileged mode is disallowed. All containers must set the securityContext.privileged field to `false` or unset the field.",
+        "field": "securityContext.privileged",
+        "fix": "Set securityContext.privileged to false, or omit that field.",
+        "source_url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/pod-security-vpol/baseline/disallow-privileged-containers/disallow-privileged-containers.yaml"
+      },
+      {
+        "policy_id": "require-run-as-nonroot",
+        "title": "Require non-root execution",
+        "status": "fail",
+        "message": "Running as root is not allowed. Either spec.securityContext.runAsNonRoot  must be set to true, or all containers (spec.containers[*], spec.initContainers[*],  spec.ephemeralContainers[*]) must have securityContext.runAsNonRoot set to true.",
+        "field": "securityContext.runAsNonRoot",
+        "fix": "Set runAsNonRoot: true in the Pod securityContext and remove conflicting container overrides.",
+        "source_url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/pod-security-vpol/restricted/require-run-as-nonroot/require-run-as-nonroot.yaml"
+      },
+      {
+        "policy_id": "disallow-privilege-escalation",
+        "title": "Block privilege escalation",
+        "status": "fail",
+        "message": "Privilege escalation is disallowed.  All containers must set the securityContext.allowPrivilegeEscalation field to `false`.",
+        "field": "securityContext.allowPrivilegeEscalation",
+        "fix": "Add allowPrivilegeEscalation: false to the securityContext of each container.",
+        "source_url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/pod-security-vpol/restricted/disallow-privilege-escalation/disallow-privilege-escalation.yaml"
+      },
+      {
+        "policy_id": "disallow-latest-tag",
+        "title": "Use an explicit image version",
+        "status": "fail",
+        "message": "Using a mutable image tag e.g. 'latest' is not allowed.",
+        "field": "spec.containers[*].image",
+        "fix": "Use an explicit application version such as eu.foo.io/example/payment-api:1.0.0.",
+        "source_url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/best-practices-vpol/disallow-latest-tag/disallow-latest-tag.yaml"
+      },
+      {
+        "policy_id": "restrict-image-registries",
+        "title": "Use an approved image registry",
+        "status": "fail",
+        "message": "Unknown image registry.",
+        "field": "containers[*].image",
+        "fix": "For this demo, use the example prefix eu.foo.io/. A real policy pack must configure its own approved registries.",
+        "source_url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/best-practices-vpol/restrict-image-registries/restrict-image-registries.yaml"
+      },
+      {
+        "policy_id": "require-labels",
+        "title": "Give every application a name",
+        "status": "fail",
+        "message": "Pod payment-api must have the label app.kubernetes.io/name with a non-empty value. Found labels: none",
+        "field": "metadata.labels.app.kubernetes.io/name",
+        "fix": "Add metadata.labels with app.kubernetes.io/name: payment-api.",
+        "source_url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/best-practices-vpol/require-labels/require-labels.yaml"
+      }
+    ],
+    "summary": {
+      "pass": 0,
+      "fail": 6,
+      "skipped": 0,
+      "error": 0
+    },
+    "latency_ms": 912
+  },
+  "passing": {
+    "engine": "Kyverno 1.19.1",
+    "revision": "ec478cb5996376c0d2f09520675805a8e33297c9",
+    "resource": "payment-api",
+    "results": [
+      {
+        "policy_id": "disallow-privileged-containers",
+        "title": "Keep containers unprivileged",
+        "status": "pass",
+        "message": "This Pod satisfies the bundled rule.",
+        "field": "securityContext.privileged",
+        "fix": "Set securityContext.privileged to false, or omit that field.",
+        "source_url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/pod-security-vpol/baseline/disallow-privileged-containers/disallow-privileged-containers.yaml"
+      },
+      {
+        "policy_id": "require-run-as-nonroot",
+        "title": "Require non-root execution",
+        "status": "pass",
+        "message": "This Pod satisfies the bundled rule.",
+        "field": "securityContext.runAsNonRoot",
+        "fix": "Set runAsNonRoot: true in the Pod securityContext and remove conflicting container overrides.",
+        "source_url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/pod-security-vpol/restricted/require-run-as-nonroot/require-run-as-nonroot.yaml"
+      },
+      {
+        "policy_id": "disallow-privilege-escalation",
+        "title": "Block privilege escalation",
+        "status": "pass",
+        "message": "This Pod satisfies the bundled rule.",
+        "field": "securityContext.allowPrivilegeEscalation",
+        "fix": "Add allowPrivilegeEscalation: false to the securityContext of each container.",
+        "source_url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/pod-security-vpol/restricted/disallow-privilege-escalation/disallow-privilege-escalation.yaml"
+      },
+      {
+        "policy_id": "disallow-latest-tag",
+        "title": "Use an explicit image version",
+        "status": "pass",
+        "message": "This Pod satisfies the bundled rule.",
+        "field": "spec.containers[*].image",
+        "fix": "Use an explicit application version such as eu.foo.io/example/payment-api:1.0.0.",
+        "source_url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/best-practices-vpol/disallow-latest-tag/disallow-latest-tag.yaml"
+      },
+      {
+        "policy_id": "restrict-image-registries",
+        "title": "Use an approved image registry",
+        "status": "pass",
+        "message": "This Pod satisfies the bundled rule.",
+        "field": "containers[*].image",
+        "fix": "For this demo, use the example prefix eu.foo.io/. A real policy pack must configure its own approved registries.",
+        "source_url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/best-practices-vpol/restrict-image-registries/restrict-image-registries.yaml"
+      },
+      {
+        "policy_id": "require-labels",
+        "title": "Give every application a name",
+        "status": "pass",
+        "message": "This Pod satisfies the bundled rule.",
+        "field": "metadata.labels.app.kubernetes.io/name",
+        "fix": "Add metadata.labels with app.kubernetes.io/name: payment-api.",
+        "source_url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/best-practices-vpol/require-labels/require-labels.yaml"
+      }
+    ],
+    "summary": {
+      "pass": 6,
+      "fail": 0,
+      "skipped": 0,
+      "error": 0
+    },
+    "latency_ms": 561
+  },
+  "missing_label": {
+    "engine": "Kyverno 1.19.1",
+    "revision": "ec478cb5996376c0d2f09520675805a8e33297c9",
+    "resource": "payment-api",
+    "results": [
+      {
+        "policy_id": "disallow-privileged-containers",
+        "title": "Keep containers unprivileged",
+        "status": "pass",
+        "message": "This Pod satisfies the bundled rule.",
+        "field": "securityContext.privileged",
+        "fix": "Set securityContext.privileged to false, or omit that field.",
+        "source_url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/pod-security-vpol/baseline/disallow-privileged-containers/disallow-privileged-containers.yaml"
+      },
+      {
+        "policy_id": "require-run-as-nonroot",
+        "title": "Require non-root execution",
+        "status": "pass",
+        "message": "This Pod satisfies the bundled rule.",
+        "field": "securityContext.runAsNonRoot",
+        "fix": "Set runAsNonRoot: true in the Pod securityContext and remove conflicting container overrides.",
+        "source_url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/pod-security-vpol/restricted/require-run-as-nonroot/require-run-as-nonroot.yaml"
+      },
+      {
+        "policy_id": "disallow-privilege-escalation",
+        "title": "Block privilege escalation",
+        "status": "pass",
+        "message": "This Pod satisfies the bundled rule.",
+        "field": "securityContext.allowPrivilegeEscalation",
+        "fix": "Add allowPrivilegeEscalation: false to the securityContext of each container.",
+        "source_url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/pod-security-vpol/restricted/disallow-privilege-escalation/disallow-privilege-escalation.yaml"
+      },
+      {
+        "policy_id": "disallow-latest-tag",
+        "title": "Use an explicit image version",
+        "status": "pass",
+        "message": "This Pod satisfies the bundled rule.",
+        "field": "spec.containers[*].image",
+        "fix": "Use an explicit application version such as eu.foo.io/example/payment-api:1.0.0.",
+        "source_url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/best-practices-vpol/disallow-latest-tag/disallow-latest-tag.yaml"
+      },
+      {
+        "policy_id": "restrict-image-registries",
+        "title": "Use an approved image registry",
+        "status": "pass",
+        "message": "This Pod satisfies the bundled rule.",
+        "field": "containers[*].image",
+        "fix": "For this demo, use the example prefix eu.foo.io/. A real policy pack must configure its own approved registries.",
+        "source_url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/best-practices-vpol/restrict-image-registries/restrict-image-registries.yaml"
+      },
+      {
+        "policy_id": "require-labels",
+        "title": "Give every application a name",
+        "status": "fail",
+        "message": "Pod payment-api must have the label app.kubernetes.io/name with a non-empty value. Found labels: none",
+        "field": "metadata.labels.app.kubernetes.io/name",
+        "fix": "Add metadata.labels with app.kubernetes.io/name: payment-api.",
+        "source_url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/best-practices-vpol/require-labels/require-labels.yaml"
+      }
+    ],
+    "summary": {
+      "pass": 5,
+      "fail": 1,
+      "skipped": 0,
+      "error": 0
+    },
+    "latency_ms": 731
+  },
+  "answer": {
+    "question": "Which image registries are allowed?",
+    "answer": "Teams can restrict image sources to registries they review and manage. An approved registry is a configurable team decision, not a universal Kubernetes requirement.\n\neu.foo.io and bar.io are upstream example values, not recommended production registries. The checker performs no image pull, signature verification or vulnerability scan.\n\nEvery regular, init and ephemeral container image must start with eu.foo.io/ or bar.io/ in this bundled example policy. For this demo, use the example prefix eu.foo.io/. A real policy pack must configure its own approved registries.",
+    "citations": [
+      "restrict-image-registries:why",
+      "restrict-image-registries:scope",
+      "restrict-image-registries:rule"
+    ],
+    "evidence": [
+      {
+        "id": "restrict-image-registries:why",
+        "policy_id": "restrict-image-registries",
+        "title": "Use an approved image registry",
+        "text": "Teams can restrict image sources to registries they review and manage. An approved registry is a configurable team decision, not a universal Kubernetes requirement.",
+        "url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/best-practices-vpol/restrict-image-registries/restrict-image-registries.yaml",
+        "score": 3.294
+      },
+      {
+        "id": "restrict-image-registries:scope",
+        "policy_id": "restrict-image-registries",
+        "title": "Use an approved image registry",
+        "text": "eu.foo.io and bar.io are upstream example values, not recommended production registries. The checker performs no image pull, signature verification or vulnerability scan.",
+        "url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/best-practices-vpol/restrict-image-registries/restrict-image-registries.yaml",
+        "score": 3.099
+      },
+      {
+        "id": "restrict-image-registries:rule",
+        "policy_id": "restrict-image-registries",
+        "title": "Use an approved image registry",
+        "text": "Every regular, init and ephemeral container image must start with eu.foo.io/ or bar.io/ in this bundled example policy. For this demo, use the example prefix eu.foo.io/. A real policy pack must configure its own approved registries.",
+        "url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/best-practices-vpol/restrict-image-registries/restrict-image-registries.yaml",
+        "score": 2.864
+      }
+    ],
+    "mode": "excerpts",
+    "abstained": false,
+    "latency_ms": 1
+  },
+  "abstention": {
+    "question": "How much annual leave do I get?",
+    "answer": "This collection has no supporting passage for that question. Try asking about one of the six Kubernetes policies.",
+    "citations": [],
+    "evidence": [],
+    "mode": "excerpts",
+    "abstained": true,
+    "latency_ms": 0
+  }
+}
