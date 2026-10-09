@@ -25,6 +25,20 @@ type Answer struct {
 }
 
 var words = regexp.MustCompile(`[a-z0-9]+`)
+
+// Generic words such as "configure" must not make an unrelated question look
+// supported. This explicit vocabulary scopes the small curated collection;
+// it is a lexical relevance gate, not a general semantic classifier.
+var topicTerms = map[string]bool{
+	"container": true, "containers": true, "init": true, "ephemeral": true,
+	"root": true, "nonroot": true, "runasnonroot": true,
+	"privileged": true, "privilege": true, "privileges": true,
+	"escalation": true, "allowprivilegeescalation": true,
+	"latest": true, "tag": true, "tags": true, "image": true, "images": true,
+	"registry": true, "registries": true, "eu": true, "foo": true, "bar": true,
+	"label": true, "labels": true, "baseline": true, "restricted": true,
+	"digest": true, "digests": true,
+}
 var stop = map[string]bool{"a": true, "an": true, "the": true, "is": true, "are": true, "to": true, "of": true, "and": true, "for": true, "in": true, "on": true, "i": true, "we": true, "how": true, "what": true, "should": true, "do": true, "does": true, "with": true, "when": true, "can": true, "my": true, "it": true, "our": true, "be": true, "why": true, "if": true, "this": true, "policy": true, "rule": true, "which": true, "must": true}
 
 func tokenize(s string) []string {
@@ -39,6 +53,16 @@ func tokenize(s string) []string {
 
 // Retrieve ranks authored passages using BM25. Scores are not confidence values.
 func (c *Catalog) Retrieve(query, policyID string, limit int) []Passage {
+	relevant := false
+	for _, term := range tokenize(query) {
+		if topicTerms[term] {
+			relevant = true
+			break
+		}
+	}
+	if !relevant {
+		return []Passage{}
+	}
 	passages := []Passage{}
 	freqs := []map[string]int{}
 	df := map[string]int{}

@@ -53,8 +53,12 @@ func TestProviderHTTPFailure(t *testing.T) {
 }
 func TestUnrelatedRetrievalAbstains(t *testing.T) {
 	c := mustCatalog(t)
-	a := Excerpts(c.Retrieve("annual leave holiday entitlement", "", 3))
-	if !a.Abstained || len(a.Citations) != 0 {
-		t.Fatalf("unsupported topic has answer %+v", a)
+	for _, q := range []string{"annual leave holiday entitlement", "How should I report a vulnerability?", "Can I configure a VPN permission?"} {
+		t.Run(q, func(t *testing.T) {
+			a := Excerpts(c.Retrieve(q, "", 3))
+			if !a.Abstained || len(a.Citations) != 0 {
+				t.Fatalf("unsupported topic has answer %+v", a)
+			}
+		})
 	}
 }

@@ -2,12 +2,12 @@
   "dataset": "docs/questions.json",
   "limitations": "Small authored evaluation set, not independent; measures retrieval only, not model answer quality. Keyword overlap can retrieve irrelevant passages.",
   "method": "BM25 over authored source-backed explanations; top three passages, no policy filter",
-  "off_topic_abstention_rate": 1,
-  "off_topic_empty_retrieval": 6,
+  "off_topic_abstention_rate": 0.6666666666666666,
+  "off_topic_empty_retrieval": 4,
   "off_topic_questions": 6,
   "on_topic_questions": 18,
-  "on_topic_top3_hit_rate": 0.9444444444444444,
-  "on_topic_top3_hits": 17,
+  "on_topic_top3_hit_rate": 1,
+  "on_topic_top3_hits": 18,
   "results": [
     {
       "question": "Can a container request privileged access?",
@@ -146,8 +146,10 @@
     {
       "question": "Can app.kubernetes.io/name have an empty value?",
       "expected_policy": "require-labels",
-      "retrieved_policies": [],
-      "correct": false
+      "retrieved_policies": [
+        "require-labels"
+      ],
+      "correct": true
     },
     {
       "question": "How do labels help tools find applications?",
@@ -172,14 +174,18 @@
     {
       "question": "How should I report a vulnerability?",
       "expected_policy": "",
-      "retrieved_policies": [],
-      "correct": true
+      "retrieved_policies": [
+        "restrict-image-registries"
+      ],
+      "correct": false
     },
     {
       "question": "Can I configure a VPN permission?",
       "expected_policy": "",
-      "retrieved_policies": [],
-      "correct": true
+      "retrieved_policies": [
+        "restrict-image-registries"
+      ],
+      "correct": false
     },
     {
       "question": "What is the company expense reimbursement amount?",
