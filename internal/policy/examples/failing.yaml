@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: payment-api
+spec:
+  containers:
+    - name: api
+      image: docker.io/example/payment-api:latest
+      securityContext:
+        privileged: true
+        runAsNonRoot: false
+        allowPrivilegeEscalation: true

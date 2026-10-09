@@ -1,0 +1,204 @@
+{
+  "dataset": "docs/questions.json",
+  "limitations": "Small authored evaluation set, not independent; measures retrieval only, not model answer quality. Keyword overlap can retrieve irrelevant passages.",
+  "method": "BM25 over authored source-backed explanations; top three passages, no policy filter",
+  "off_topic_abstention_rate": 0.6666666666666666,
+  "off_topic_empty_retrieval": 4,
+  "off_topic_questions": 6,
+  "on_topic_questions": 18,
+  "on_topic_top3_hit_rate": 1,
+  "on_topic_top3_hits": 18,
+  "results": [
+    {
+      "question": "Can a container request privileged access?",
+      "expected_policy": "disallow-privileged-containers",
+      "retrieved_policies": [
+        "disallow-privileged-containers"
+      ],
+      "correct": true
+    },
+    {
+      "question": "Must privileged be false or can it be omitted?",
+      "expected_policy": "disallow-privileged-containers",
+      "retrieved_policies": [
+        "disallow-privileged-containers"
+      ],
+      "correct": true
+    },
+    {
+      "question": "Does this rule inspect privileged init containers?",
+      "expected_policy": "disallow-privileged-containers",
+      "retrieved_policies": [
+        "disallow-privileged-containers"
+      ],
+      "correct": true
+    },
+    {
+      "question": "Where should I set runAsNonRoot?",
+      "expected_policy": "require-run-as-nonroot",
+      "retrieved_policies": [
+        "require-run-as-nonroot"
+      ],
+      "correct": true
+    },
+    {
+      "question": "Can a container override non-root execution?",
+      "expected_policy": "require-run-as-nonroot",
+      "retrieved_policies": [
+        "require-run-as-nonroot"
+      ],
+      "correct": true
+    },
+    {
+      "question": "Does the non-root check actually run the image to verify its user ID?",
+      "expected_policy": "require-run-as-nonroot",
+      "retrieved_policies": [
+        "require-run-as-nonroot",
+        "disallow-privilege-escalation"
+      ],
+      "correct": true
+    },
+    {
+      "question": "Why must allowPrivilegeEscalation be false?",
+      "expected_policy": "disallow-privilege-escalation",
+      "retrieved_policies": [
+        "disallow-privilege-escalation",
+        "disallow-privileged-containers"
+      ],
+      "correct": true
+    },
+    {
+      "question": "Can I omit allowPrivilegeEscalation?",
+      "expected_policy": "disallow-privilege-escalation",
+      "retrieved_policies": [
+        "disallow-privilege-escalation",
+        "disallow-privileged-containers"
+      ],
+      "correct": true
+    },
+    {
+      "question": "How does this rule stop a process gaining privileges after it starts?",
+      "expected_policy": "disallow-privilege-escalation",
+      "retrieved_policies": [
+        "require-run-as-nonroot",
+        "disallow-privilege-escalation"
+      ],
+      "correct": true
+    },
+    {
+      "question": "Why is the latest image tag rejected?",
+      "expected_policy": "disallow-latest-tag",
+      "retrieved_policies": [
+        "disallow-latest-tag",
+        "restrict-image-registries"
+      ],
+      "correct": true
+    },
+    {
+      "question": "Do all container images need an explicit version tag?",
+      "expected_policy": "disallow-latest-tag",
+      "retrieved_policies": [
+        "disallow-latest-tag"
+      ],
+      "correct": true
+    },
+    {
+      "question": "Are version tags immutable or should I use image digests?",
+      "expected_policy": "disallow-latest-tag",
+      "retrieved_policies": [
+        "disallow-latest-tag"
+      ],
+      "correct": true
+    },
+    {
+      "question": "Which image registries are allowed in this demo?",
+      "expected_policy": "restrict-image-registries",
+      "retrieved_policies": [
+        "restrict-image-registries"
+      ],
+      "correct": true
+    },
+    {
+      "question": "Can I use eu.foo.io or bar.io?",
+      "expected_policy": "restrict-image-registries",
+      "retrieved_policies": [
+        "restrict-image-registries",
+        "disallow-latest-tag"
+      ],
+      "correct": true
+    },
+    {
+      "question": "Are the approved registries universally recommended for production?",
+      "expected_policy": "restrict-image-registries",
+      "retrieved_policies": [
+        "restrict-image-registries"
+      ],
+      "correct": true
+    },
+    {
+      "question": "Which application label is required?",
+      "expected_policy": "require-labels",
+      "retrieved_policies": [
+        "require-labels"
+      ],
+      "correct": true
+    },
+    {
+      "question": "Can app.kubernetes.io/name have an empty value?",
+      "expected_policy": "require-labels",
+      "retrieved_policies": [
+        "require-labels"
+      ],
+      "correct": true
+    },
+    {
+      "question": "How do labels help tools find applications?",
+      "expected_policy": "require-labels",
+      "retrieved_policies": [
+        "require-labels"
+      ],
+      "correct": true
+    },
+    {
+      "question": "What is the annual leave entitlement?",
+      "expected_policy": "",
+      "retrieved_policies": [],
+      "correct": true
+    },
+    {
+      "question": "How do I rotate JWT signing keys?",
+      "expected_policy": "",
+      "retrieved_policies": [],
+      "correct": true
+    },
+    {
+      "question": "How should I report a vulnerability?",
+      "expected_policy": "",
+      "retrieved_policies": [
+        "restrict-image-registries"
+      ],
+      "correct": false
+    },
+    {
+      "question": "Can I configure a VPN permission?",
+      "expected_policy": "",
+      "retrieved_policies": [
+        "restrict-image-registries"
+      ],
+      "correct": false
+    },
+    {
+      "question": "What is the company expense reimbursement amount?",
+      "expected_policy": "",
+      "retrieved_policies": [],
+      "correct": true
+    },
+    {
+      "question": "How can I fine tune a language model?",
+      "expected_policy": "",
+      "retrieved_policies": [],
+      "correct": true
+    }
+  ],
+  "source_revision": "ec478cb5996376c0d2f09520675805a8e33297c9"
+}

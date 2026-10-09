@@ -1,0 +1,6 @@
+bin/
+node_modules/
+.env
+coverage.out
+*.tsbuildinfo
+.cache/

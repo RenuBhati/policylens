@@ -1,0 +1,43 @@
+{
+  "repository": "https://github.com/kyverno/policies",
+  "revision": "ec478cb5996376c0d2f09520675805a8e33297c9",
+  "engine": "1.19.1",
+  "sources": [
+    {
+      "file": "disallow-privileged-containers.yaml",
+      "path": "pod-security-vpol/baseline/disallow-privileged-containers/disallow-privileged-containers.yaml",
+      "url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/pod-security-vpol/baseline/disallow-privileged-containers/disallow-privileged-containers.yaml",
+      "sha256": "cc7246f60220ca668cef9e1b2e9bc67e92185e5765ed9a8d7caed3fb71908e52"
+    },
+    {
+      "file": "require-run-as-nonroot.yaml",
+      "path": "pod-security-vpol/restricted/require-run-as-nonroot/require-run-as-nonroot.yaml",
+      "url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/pod-security-vpol/restricted/require-run-as-nonroot/require-run-as-nonroot.yaml",
+      "sha256": "61b7c5142a719b5c9a0cb8bb99eabcc428e636bbb72386008cb4f09057e985f6"
+    },
+    {
+      "file": "disallow-privilege-escalation.yaml",
+      "path": "pod-security-vpol/restricted/disallow-privilege-escalation/disallow-privilege-escalation.yaml",
+      "url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/pod-security-vpol/restricted/disallow-privilege-escalation/disallow-privilege-escalation.yaml",
+      "sha256": "472536c045db34e54d761902da061116b0f69c0705f4ab61959dfabbe3db55ef"
+    },
+    {
+      "file": "disallow-latest-tag.yaml",
+      "path": "best-practices-vpol/disallow-latest-tag/disallow-latest-tag.yaml",
+      "url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/best-practices-vpol/disallow-latest-tag/disallow-latest-tag.yaml",
+      "sha256": "fc49a94817297938131fb05f4237aaa3107171a7c4a110aad0b0deca1b7ecba2"
+    },
+    {
+      "file": "restrict-image-registries.yaml",
+      "path": "best-practices-vpol/restrict-image-registries/restrict-image-registries.yaml",
+      "url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/best-practices-vpol/restrict-image-registries/restrict-image-registries.yaml",
+      "sha256": "7d26596c5c9cb09295ff6af31af137f1501113bfd89fa9b3fd914af6fc857758"
+    },
+    {
+      "file": "require-labels.yaml",
+      "path": "best-practices-vpol/require-labels/require-labels.yaml",
+      "url": "https://github.com/kyverno/policies/blob/ec478cb5996376c0d2f09520675805a8e33297c9/best-practices-vpol/require-labels/require-labels.yaml",
+      "sha256": "01e9924b278a86b6934381de2621b20c3f85ab18b34975c7bb4d04f8c9de8dfa"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: payment-api
+  labels:
+    app.kubernetes.io/name: payment-api
+spec:
+  securityContext:
+    runAsNonRoot: true
+  containers:
+    - name: api
+      image: eu.foo.io/example/payment-api:1.0.0
+      securityContext:
+        privileged: false
+        allowPrivilegeEscalation: false
