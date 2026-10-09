@@ -29,6 +29,21 @@ The frontend build is embedded in the Go binary. The checked-in distribution let
 
 The upstream registry values `eu.foo.io` and `bar.io` are fictional example values. Images are not pulled or deployed. The bundled upstream policies have audit actions; an offline failure is a policy violation, not proof of an actual admission rejection.
 
+## Free public preview
+
+The complete UI and Go/Kyverno API can be shared through the authenticated Cloudflare `cf` CLI:
+
+```sh
+# Terminal 1
+make run
+# Terminal 2
+make share
+```
+
+Open the HTTPS `trycloudflare.com` URL printed by `cf`. Keep both terminals and the computer running and online. The URL is temporary and changes when you start a new tunnel; this is a live demo, with no uptime guarantee. For another local port, use matching values: `ADDR=127.0.0.1:8081 make run` and `PREVIEW_ORIGIN=http://127.0.0.1:8081 make share`.
+
+A public Quick Tunnel preview was verified on 9 October 2026: static assets, browser-origin POST handling, real failing/corrected/missing-label checks and evidence questions. Cloudflare Pages is planned and has not been deployed. See `docs/HOSTING.md` for permanent frontend options and backend availability requirements. The current socket-peer limiter is shared by tunnel visitors; expect HTTP 429 after 60 combined POST requests per minute.
+
 ## Answer modes
 
 The default **Source excerpts** mode uses BM25 keyword retrieval over authored, source-backed explanations. It quotes those passages and does not call an LLM. Ranking scores are not confidence probabilities.

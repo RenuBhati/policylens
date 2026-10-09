@@ -1,9 +1,11 @@
-.PHONY: setup ui engine test vet build run eval
+.PHONY: setup ui engine test vet build run eval share
 
 export GOCACHE := $(CURDIR)/.cache/go-build
 export GOPATH := $(CURDIR)/.cache/go-path
 export GOMODCACHE := $(CURDIR)/.cache/go-mod
 export npm_config_cache := $(CURDIR)/.cache/npm
+
+PREVIEW_ORIGIN ?= http://127.0.0.1:8080
 
 setup: engine ui
 
@@ -29,3 +31,7 @@ run:
 
 eval:
 	go run ./cmd/eval
+
+# Keep the application running in another terminal before sharing.
+share:
+	cf tunnels quick-start "$(PREVIEW_ORIGIN)"

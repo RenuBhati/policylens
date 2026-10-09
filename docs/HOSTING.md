@@ -1,6 +1,6 @@
 # Free Cloudflare hosting plan
 
-Checked against official Cloudflare documentation on 9 October 2026. This is a deployment plan, not a claim that the application is published.
+Checked against official Cloudflare documentation on 9 October 2026. A temporary public Quick Tunnel preview is now running and was verified on this date. Permanent Cloudflare Pages hosting remains planned. The temporary hostname is session-specific and is not committed as a durable project address.
 
 ## Decision
 
@@ -24,17 +24,23 @@ flowchart LR
   Go --> Model[Optional local Ollama]
 ```
 
-Run PolicyLens, then run `cloudflared` separately:
+Run PolicyLens, then use the installed Cloudflare `cf` CLI in another terminal:
 
 ```sh
 make run
-# In another terminal, after installing cloudflared:
-cloudflared tunnel --url http://127.0.0.1:8080
+# In another terminal:
+make share
+# Equivalent CLI command:
+cf tunnels quick-start http://127.0.0.1:8080
 ```
+
+The authenticated `cf` CLI downloads/manages its tunnel connector. Its local `.cloudflare/` account cache is ignored by Git. A separately installed `cloudflared` can also run `cloudflared tunnel --url http://127.0.0.1:8080`.
 
 This produces a temporary `trycloudflare.com` URL. The local computer, API and tunnel must remain running and online. Stopping the tunnel removes access. Quick Tunnels are for development/testing, have a concurrent-request limit and no uptime SLA; they are not durable application hosting. No domain purchase is needed for the temporary URL.
 
-This stage exposes the same frontend and backend on one origin. Verify Origin/Host forwarding and all API paths before sharing; the application rejects mismatched browser origins. Keep the server bound to localhost, expose only the application port, use the fixed sample policy pack, and avoid entering confidential configurations.
+The initial public preview passed HTTPS checks for readiness, embedded HTML/JS/CSS, policy/example APIs, all three real-engine fixtures, cited source excerpts and unrelated-question abstention. Same-public-origin POSTs succeeded; a different Origin was rejected with HTTP 403. Browser rendering remains unverified.
+
+This stage exposes the same frontend and backend on one origin. Recheck Origin/Host forwarding and API paths whenever the deployment changes; the application rejects mismatched browser origins. Keep the server bound to localhost, expose only the application port, use the fixed sample policy pack, and avoid entering confidential configurations.
 
 Sources:
 - Quick Tunnels: https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/do-more-with-tunnels/trycloudflare/
