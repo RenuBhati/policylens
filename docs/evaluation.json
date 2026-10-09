@@ -6,8 +6,8 @@
   "off_topic_empty_retrieval": 6,
   "off_topic_questions": 6,
   "on_topic_questions": 18,
-  "on_topic_top3_hit_rate": 0.9444444444444444,
-  "on_topic_top3_hits": 17,
+  "on_topic_top3_hit_rate": 1,
+  "on_topic_top3_hits": 18,
   "results": [
     {
       "question": "Can a container request privileged access?",
@@ -146,8 +146,10 @@
     {
       "question": "Can app.kubernetes.io/name have an empty value?",
       "expected_policy": "require-labels",
-      "retrieved_policies": [],
-      "correct": false
+      "retrieved_policies": [
+        "require-labels"
+      ],
+      "correct": true
     },
     {
       "question": "How do labels help tools find applications?",

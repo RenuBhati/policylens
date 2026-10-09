@@ -53,7 +53,8 @@ func tokenize(s string) []string {
 
 // Retrieve ranks authored passages using BM25. Scores are not confidence values.
 func (c *Catalog) Retrieve(query, policyID string, limit int) []Passage {
-	relevant := false
+	// A full label identifier is a valid topic even without the word "label".
+	relevant := strings.Contains(strings.ToLower(query), "app.kubernetes.io/name")
 	for _, term := range tokenize(query) {
 		if topicTerms[term] {
 			relevant = true

@@ -62,3 +62,13 @@ func TestUnrelatedRetrievalAbstains(t *testing.T) {
 		})
 	}
 }
+
+func TestDirectFieldIdentifierRemainsSearchable(t *testing.T) {
+	evidence := mustCatalog(t).Retrieve("Can app.kubernetes.io/name have an empty value?", "", 3)
+	for _, e := range evidence {
+		if e.PolicyID == "require-labels" {
+			return
+		}
+	}
+	t.Fatal("direct label identifier was rejected by the relevance gate")
+}

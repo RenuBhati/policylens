@@ -88,6 +88,7 @@ Pod-security-derived controls and configurable best-practice controls must have 
 | Endpoint | Input | Output |
 |---|---|---|
 | `GET /healthz` | None | Process health |
+| `GET /readyz` | None | Engine readiness; unavailable is HTTP 503 |
 | `GET /api/status` | None | Engine availability/version, answer mode and pack provenance |
 | `GET /api/policies` | None | Curated policy metadata and source definitions |
 | `GET /api/examples` | None | Failing and corrected Pod manifests |

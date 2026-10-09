@@ -132,6 +132,13 @@ func decode(w http.ResponseWriter, r *http.Request, v any) error {
 func (s *Service) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, map[string]string{"status": "ok"}) })
+	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
+		if s.Engine.Path == "" {
+			fail(w, r, 503, "policy engine is unavailable")
+			return
+		}
+		writeJSON(w, 200, map[string]string{"status": "ready"})
+	})
 	mux.HandleFunc("GET /api/status", func(w http.ResponseWriter, r *http.Request) {
 		mode := "excerpts"
 		if s.Provider != nil {

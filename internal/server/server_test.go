@@ -89,3 +89,10 @@ func TestConcurrentSourceQueries(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+func TestReadinessRequiresEngine(t *testing.T) {
+	w := request(testService(t, 60).Handler(), "GET", "/readyz", "")
+	if w.Code != 503 {
+		t.Fatalf("missing engine should not be ready: %d", w.Code)
+	}
+}
