@@ -10,7 +10,7 @@ import (
 	"policylens/internal/policy"
 )
 
-var errModelBudget = errors.New("daily demo model-call budget exhausted")
+var errModelBudget = errors.New("daily model-call budget exhausted")
 
 func (s *Service) modelBudgetStatus() map[string]any {
 	s.budgetMu.Lock()
@@ -53,7 +53,7 @@ func (s *Service) generate(ctx context.Context, question string, evidence []poli
 func (s *Service) modelFailure(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
 	case errors.Is(err, errModelBudget):
-		fail(w, r, 429, "daily AI demo budget exhausted; source excerpts remain available")
+		fail(w, r, 429, "daily AI budget exhausted; source excerpts remain available")
 	case errors.Is(err, policy.ErrInvalidModelCitations):
 		fail(w, r, 502, "model returned invalid citations; use source excerpts")
 	case errors.Is(err, policy.ErrInvalidModelAnswer):

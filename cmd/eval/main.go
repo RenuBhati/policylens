@@ -20,7 +20,7 @@ type outcome struct {
 }
 
 func main() {
-	data, err := os.ReadFile("docs/questions.json")
+	data, err := os.ReadFile("testdata/evaluation/questions.json")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -64,7 +64,7 @@ func main() {
 		}
 		results = append(results, outcome{q.Question, q.PolicyID, retrieved, correct})
 	}
-	report := map[string]any{"method": "BM25 over authored source-backed explanations; top three passages, no policy filter", "dataset": "docs/questions.json", "source_revision": catalog.Provenance.Revision, "on_topic_questions": onTopic, "on_topic_top3_hits": hits, "on_topic_top3_hit_rate": float64(hits) / float64(onTopic), "off_topic_questions": offTopic, "off_topic_empty_retrieval": abstentions, "off_topic_abstention_rate": float64(abstentions) / float64(offTopic), "limitations": "Small authored evaluation set, not independent; measures retrieval only, not model answer quality. Keyword overlap can retrieve irrelevant passages.", "results": results}
+	report := map[string]any{"method": "BM25 over authored source-backed explanations; top three passages, no policy filter", "dataset": "testdata/evaluation/questions.json", "source_revision": catalog.Provenance.Revision, "on_topic_questions": onTopic, "on_topic_top3_hits": hits, "on_topic_top3_hit_rate": float64(hits) / float64(onTopic), "off_topic_questions": offTopic, "off_topic_empty_retrieval": abstentions, "off_topic_abstention_rate": float64(abstentions) / float64(offTopic), "limitations": "Small authored evaluation set, not independent; measures retrieval only, not model answer quality. Keyword overlap can retrieve irrelevant passages.", "results": results}
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	if err = enc.Encode(report); err != nil {

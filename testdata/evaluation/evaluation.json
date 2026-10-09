@@ -1,5 +1,5 @@
 {
-  "dataset": "docs/questions.json",
+  "dataset": "testdata/evaluation/questions.json",
   "limitations": "Small authored evaluation set, not independent; measures retrieval only, not model answer quality. Keyword overlap can retrieve irrelevant passages.",
   "method": "BM25 over authored source-backed explanations; top three passages, no policy filter",
   "off_topic_abstention_rate": 1,

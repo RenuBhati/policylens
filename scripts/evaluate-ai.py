@@ -9,7 +9,7 @@ import urllib.request
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--origin', default='http://127.0.0.1:8080')
-parser.add_argument('--output', type=Path, default=Path('docs/ai-evaluation.json'))
+parser.add_argument('--output', type=Path, default=Path('testdata/evaluation/ai-evaluation.json'))
 args = parser.parse_args()
 
 def api(path, body=None):
@@ -25,7 +25,7 @@ cases=[
     {'id':'nonroot','question':'What does runAsNonRoot do?','policy_id':'require-run-as-nonroot','terms':['root','true']},
     {'id':'escalation','question':'How do I disable privilege escalation?','policy_id':'disallow-privilege-escalation','terms':['allowprivilegeescalation','false']},
     {'id':'tag','question':'Why is the latest image tag rejected?','policy_id':'disallow-latest-tag','terms':['latest']},
-    {'id':'registry','question':'Which image registries are allowed in this demo, and are they universal Kubernetes requirements?','policy_id':'restrict-image-registries','terms':['eu.foo.io','bar.io','example']},
+    {'id':'registry','question':'Which image registries are allowed in this policy collection, and are they universal Kubernetes requirements?','policy_id':'restrict-image-registries','terms':['eu.foo.io','bar.io','example']},
     {'id':'label','question':'Which application label must I add to this Pod?','policy_id':'require-labels','terms':['app.kubernetes.io/name']},
     {'id':'annual-leave','question':'What is my annual leave entitlement?','abstained':True},
     {'id':'vpn','question':'How can I request VPN permissions?','abstained':True},

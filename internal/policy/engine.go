@@ -117,7 +117,7 @@ func NormalizeManifest(manifest string) ([]byte, string, error) {
 		return nil, "", fmt.Errorf("invalid resource mapping: %w", err)
 	}
 	if obj["apiVersion"] != "v1" || obj["kind"] != "Pod" {
-		return nil, "", fmt.Errorf("this demo supports only apiVersion v1, kind Pod")
+		return nil, "", fmt.Errorf("only apiVersion v1, kind Pod is supported")
 	}
 	metadata, ok := obj["metadata"].(map[string]any)
 	if !ok {

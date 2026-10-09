@@ -1,148 +1,101 @@
 # PolicyLens
 
-Understand a Kubernetes policy, check a concrete Pod configuration, and inspect the sources behind an explanation.
+PolicyLens checks Kubernetes Pod manifests against Kyverno policies and explains the results with linked source evidence. It includes a Go API, a React interface, a CLI and a Go SDK.
 
-This is a demonstrable Go/React engineering project using six real, unmodified Kyverno policies from a pinned public source revision. It includes a React/TypeScript UI, REST API, actual Kyverno validation, Cloudflare Workers AI and optional local LLM generation, Go SDK, CLI, tests, evaluation, container packaging and deployment examples.
+The bundled collection contains six public policies covering privileged containers, non-root execution, privilege escalation, image tags, registries and application labels. Kyverno determines pass or fail. Optional LLM integration generates explanations from retrieved policy passages.
 
-## Quick start
+## Getting started
 
-Requires Go 1.23+, Node.js 22.12+ (or 20.19+) and npm, curl, tar, and a SHA-256 tool. macOS/Linux engine installer supports x86-64 and ARM64. Initial setup downloads npm/Go dependencies and the pinned Kyverno release; subsequent key-free demos need no model service.
+Requires Go 1.23+, Node.js 22.12+ or 20.19+, npm, curl, tar and a SHA-256 tool. The Kyverno installer supports macOS and Linux on x86-64 and ARM64.
 
 ```sh
 make setup
-make test
 make run
 ```
 
-Open **http://127.0.0.1:8080**. No login, API key or cluster is needed for the sample workspace. Use `ADDR=127.0.0.1:8081 make run` if port 8080 is occupied.
+Open [localhost:8080](http://127.0.0.1:8080). Load the failing or corrected Pod example to try a check, or ask a question about the policy collection. Source excerpts work without an API key or model service.
 
-The frontend build is embedded in the Go binary. The checked-in distribution lets you run the API/UI directly with `make run`; rebuild with `make ui` after UI edits. Run commands from this directory. The Makefile keeps build caches inside `.cache/` to avoid changing system cache permissions.
+Use `ADDR=127.0.0.1:8081 make run` to change the port. The frontend is embedded in the Go binary; run `make ui` and restart the server after frontend changes.
 
-## Try the demo
+## AI explanations
 
-1. Explore a policy and open its immutable upstream source link.
-2. Choose **Check a Pod**, load **Failing example**, and run the check: all six policies fail.
-3. Load **Corrected example**: all six pass.
-4. Remove the required application label from the corrected example: five pass and one fails.
-5. Ask which registries are allowed in this pack and inspect the supporting passages.
-6. Ask about annual leave: no source is found in this collection.
-
-The upstream registry values `eu.foo.io` and `bar.io` are fictional example values. Images are not pulled or deployed. The bundled upstream policies have audit actions; an offline failure is a policy violation, not proof of an actual admission rejection.
-
-## Free public preview
-
-The complete UI and Go/Kyverno API can be shared through the authenticated Cloudflare `cf` CLI:
+Cloudflare Workers AI uses the installed, authenticated `cf` CLI:
 
 ```sh
-# Terminal 1
-make run
-# Terminal 2
-make share
-```
-
-Open the HTTPS `trycloudflare.com` URL printed by `cf`. Keep both terminals and the computer running and online. The URL is temporary and changes when you start a new tunnel; this is a live demo, with no uptime guarantee. For another local port, use matching values: `ADDR=127.0.0.1:8081 make run` and `PREVIEW_ORIGIN=http://127.0.0.1:8081 make share`.
-
-A public Quick Tunnel preview was verified on 9 October 2026: static assets, browser-origin POST handling, real failing/corrected/missing-label checks and evidence questions. Cloudflare Pages is planned and has not been deployed. See `docs/HOSTING.md` for permanent frontend options and backend availability requirements. The current socket-peer limiter is shared by tunnel visitors; expect HTTP 429 after 60 combined POST requests per minute.
-
-## Real AI demonstration
-
-```sh
-# Uses the installed, authenticated cf CLI. Keep make share in another terminal.
 make run-ai
 ```
 
-Choose **AI-generated answer** in Ask a question, compare it with **Source excerpts**, then run a Pod check and select **Explain this result with AI**. The server reruns Kyverno before generation; the model receives a verified rule status and public evidence, not the raw Pod. Generated prose cannot change validation decisions. Citations, model name, latency and reported usage are visible.
+The default model is `@cf/meta/llama-3.1-8b-instruct-fp8`. Select **AI-generated answer** to ask a question or **Explain this result with AI** after a check. The explanation endpoint rechecks the manifest before generation and sends public policy passages and the verified finding to the model, excluding the raw manifest.
 
-Cloudflare inference is subject to its free daily allocation and account usage. The default local safeguard allows 40 attempts per UTC day per process; source-only answers remain available afterward. CLI startup adds latency, and a server restart resets this in-memory budget. See `docs/AI.md` for the architecture, privacy boundaries, evaluation and production tradeoffs.
-
-## Answer modes
-
-The default **Source excerpts** mode uses BM25 keyword retrieval over authored, source-backed explanations. It quotes those passages and does not call an LLM. Ranking scores are not confidence probabilities.
-
-A curated topic vocabulary reduces unrelated matches. This lexical gate is limited; the recorded evaluation has 18 policy questions and six unrelated questions and is not an independent accuracy benchmark. The baseline and updated results are retained in `docs/`.
-
-Optional Ollama generation uses the same retrieved evidence:
+Alternatively, use an existing Ollama installation:
 
 ```sh
-# Start Ollama and install a suitable model separately.
 OLLAMA_MODEL=your-installed-model OLLAMA_URL=http://127.0.0.1:11434 make run
 ```
 
-The UI labels this mode as generated. The backend validates reference IDs and rejects uncited factual responses or fabricated IDs. This does not guarantee semantic faithfulness or prevent every prompt injection. Provider tests use deterministic test doubles; real-model quality must be evaluated separately. A provider failure is reported explicitly.
+Both providers use BM25 retrieval and validate response structure and citation IDs. Empty retrieval returns an abstention. Citations should still be reviewed for whether they support the generated claims.
+
+Model calls default to 40 attempts per UTC day per server process, configurable with `AI_DAILY_CALL_LIMIT` (1–100). This in-memory limit resets on restart; provider usage limits apply separately.
 
 ## CLI and SDK
+
+With the server running:
 
 ```sh
 make build
 ./bin/policylens policies
 ./bin/policylens ask "Which image registries are allowed?"
-./bin/policylens check internal/policy/examples/failing.yaml
 ./bin/policylens check internal/policy/examples/passing.yaml
 ./bin/policylens -json policies
 ```
 
-CLI check exits 1 for violations, skipped rules or engine errors; it exits 0 only for a complete passing result. Global flags precede the command. A Go client is available in `sdk/` and used by the CLI.
+Checks exit with code 0 only when all rules pass; violations, skipped rules and engine errors exit with code 1. Global flags precede the command. The Go client lives in [`sdk/`](sdk/).
 
-## Development and verification
+## API
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| GET | `/api/policies` | Policy definitions and source links |
+| GET | `/api/examples` | Sample Pod manifests |
+| GET | `/api/status` | Engine and model configuration |
+| POST | `/api/check` | Check `{"manifest":"Pod YAML"}` |
+| POST | `/api/ask` | Ask `{"question":"...","mode":"excerpts"}`; mode may also be `generated` |
+| POST | `/api/explain` | Explain `{"manifest":"Pod YAML","policy_id":"..."}` after a fresh check |
+
+Health, engine readiness and Prometheus metrics are available at `/healthz`, `/readyz` and `/metrics`. Responses include `X-Request-ID`; errors include `error` and `request_id`.
+
+## Development
 
 ```sh
-make test          # race detection, API/provider/SDK tests, real-engine fixtures
+make test          # Go race tests, API/SDK/provider tests and engine fixtures
 make vet
-make eval          # labelled retrieval evaluation; outputs JSON
-make ui            # TypeScript check and production build
+make eval          # Retrieval evaluation; prints a JSON report
+make ui            # TypeScript check and frontend build
+make build
 ```
 
-Real-engine tests run when `bin/kyverno` exists. CI installs it; `KYVERNO_TEST_BIN` can supply another location, but the engine must match the pinned version. Missing-engine behavior is tested independently.
+Real-engine tests require the pinned Kyverno binary installed by `make setup`. Run `npm run dev` in `frontend/` alongside `make run` for frontend development; Vite proxies the API to port 8080.
 
-For frontend iteration, start the backend with `make run`, then run `npm run dev` in `frontend/`. Vite proxies API calls to port 8080. Rebuild/restart the Go service after a production frontend build or source change.
+Evaluation questions and recorded results are in [`testdata/evaluation/`](testdata/evaluation/). To evaluate a configured model, run `python3 scripts/evaluate-ai.py`. These small authored sets check retrieval, citations, keywords and abstention; they are not general accuracy benchmarks.
 
-## REST API
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| GET | `/healthz` | Process health |
-| GET | `/readyz` | Engine readiness; 503 when unavailable |
-| GET | `/api/status` | Engine availability, answer mode and provenance |
-| GET | `/api/policies` | Six curated policies, explanations and definitions |
-| GET | `/api/examples` | Failing/corrected sample Pod YAML |
-| POST | `/api/check` | JSON body: `{"manifest":"Pod YAML"}` |
-| POST | `/api/ask` | JSON body: `{"question":"...","policy_id":"optional","mode":"generated or excerpts"}` |
-| POST | `/api/explain` | Fresh engine check and generated explanation: `{"manifest":"Pod YAML","policy_id":"..."}` |
-| GET | `/metrics` | Prometheus request/check/question counters |
-
-Every response carries `X-Request-ID`. API errors include `error` and `request_id`. Policy failures return HTTP 200 with individual `fail` results; parser errors are 400, payload limits 413, missing engine 503, engine/provider errors 502, deadlines 504 and rate limits 429.
-
-## Architecture and boundaries
-
-The Go API embeds the policy pack and UI. Manifest checks call a fixed Kyverno executable through argument arrays and temporary files. There is no shell execution of user-provided content, cluster connection, arbitrary policy submission or document persistence. Two engine processes and two model calls may run concurrently, with deadlines.
-
-The checker accepts one `v1` Pod up to 64 KiB, with constrained required fields and no YAML aliases. It is not a complete Kubernetes schema validator. A six-policy pass does not establish complete security, runtime behavior or full Pod Security Standards compliance. The image-tag rule is the original upstream string expression and is not a full OCI reference parser.
-
-POST requests have a fixed-window, in-memory limit of 60 per client IP per minute. The server uses the socket peer address and does not trust forwarded headers. Rate limits are per process and need a reviewed proxy configuration/shared limiter before public multi-instance deployment. Routine logs exclude submitted content. Same-origin POST requests are enforced when browsers provide Origin.
-
-This public sample workspace deliberately needs no account system. OAuth/OIDC, custom policy uploads, MongoDB persistence, Redis, semantic retrieval and VPN policy collections are subsequent work, specified in the PRD.
-
-## Containers and Kubernetes
+## Running elsewhere
 
 ```sh
 docker compose up --build
 ```
 
-The runtime container uses a non-root UID, read-only filesystem and writable temporary mount. The Docker build downloads and checksum-verifies the pinned Linux Kyverno CLI.
+The container runs as a non-root user with a read-only filesystem and writable temporary storage. [`deploy/kubernetes.yaml`](deploy/kubernetes.yaml) provides a deployment example; build and load the image into your cluster before applying it.
 
-`deploy/kubernetes.yaml` is a starting example with resource bounds, probes and a temporary volume. Build/load an image, then apply and port-forward in your own test cluster. Docker and Kubernetes execution require their respective runtime/cluster; consult `docs/IMPLEMENTATION.md` for what has actually been verified.
+To temporarily share a running local server, use `make share`. This requires the `cf` CLI and prints a Cloudflare Quick Tunnel URL. The computer, server and tunnel must remain online. Tunnel visitors share the server's socket-peer rate limit of 60 POST requests per minute.
 
-## Documentation and sources
+## Scope
 
-- `docs/PRD.md`: product requirements, acceptance criteria and roadmap.
-- `docs/DEMO.md`: five-minute interview walkthrough.
-- `docs/AI.md`: actual-model demo, evaluation and provider tradeoffs.
-- `docs/VIDEO.md`: narrated AI demo with actual model results and a reproducible Kokoro/FFmpeg workflow.
-- `docs/evaluation.json`: recorded retrieval evaluation.
-- `internal/policy/sources/manifest.json`: source revision, pinned CLI and file digests.
-- `internal/policy/sources/LICENSE`: original upstream Apache 2.0 license.
-- `NOTICE`: attribution and authorship boundaries.
+Checks accept a single `v1` Pod up to 64 KiB and run the bundled policies offline. The registry names `eu.foo.io` and `bar.io` are upstream example values. PolicyLens does not pull images, scan for CVEs or enforce cluster admission. A passing check only covers these six policies.
 
-Kyverno: https://github.com/kyverno/policies
-Kubernetes standards: https://kubernetes.io/docs/concepts/security/pod-security-standards/
-Ollama API: https://docs.ollama.com/api/chat
+The server has no user accounts or persistent document storage. Keep submitted manifests within a trusted environment when running a shared instance.
+
+## License
+
+[Apache 2.0](LICENSE). Bundled policies come from [kyverno/policies](https://github.com/kyverno/policies) and retain their original license. Pinned versions and file digests are in [`internal/policy/sources/manifest.json`](internal/policy/sources/manifest.json); attribution is in [NOTICE](NOTICE).

@@ -8,5 +8,5 @@ at internal/policy/sources/LICENSE. Per-file provenance and SHA-256 digests
 are recorded in internal/policy/sources/manifest.json.
 
 PolicyLens explanations are separately authored summaries. They are not
-official Kubernetes, Kyverno or Citi documentation. Kubernetes and Kyverno
+official Kubernetes or Kyverno documentation. Kubernetes and Kyverno
 names identify upstream projects; no affiliation or endorsement is implied.
