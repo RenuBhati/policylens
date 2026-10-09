@@ -66,3 +66,13 @@ See `evaluation-baseline.json`, `evaluation.json` and `questions.json`. This is 
 ## Deliberate MVP boundaries
 
 No accounts, custom collections, persistent database, live cluster enforcement or permanent hosting are claimed. Those remain roadmap items. The sample images and upstream registry names are examples and are never pulled or deployed. A passing six-rule check is limited pack compliance, not full security certification.
+
+## Actual-model AI extension — 9 October 2026
+
+Cloudflare Workers AI generation is now implemented and running through the authenticated server-side `cf` CLI with Llama 3.1 8B FP8. The UI compares source excerpts and generation, and offers a finding explanation that rechecks the Pod before model invocation. The raw Pod is not transmitted to that model endpoint. Provider deadlines, output bounds, exact citation validation, model counters and a per-process daily attempt budget accompany the feature.
+
+The new Go race tests, Go vet, production UI build and binaries passed locally. New tests cover the CLI transport, cancellation, source-only bypass, budget exhaustion, absent providers and real engine rechecks with a private-annotation sentinel that must not reach the model. Real answers and failures are retained in `ai-evaluation-baseline.json` and `ai-evaluation.json`; see `AI.md`. Mechanical checks are limited and are not a semantic-faithfulness benchmark. Browser rendering remains unverified because saved permissions block app access. The earlier narrated video shows source-only behavior and has not been regenerated for this extension.
+
+Final public HTTPS checks verified the new embedded assets, generated/excerpt mode comparison and a real six-failure Kyverno check with a cited AI explanation. A public rejected-answer request returned HTTP 502 with an empty response body through the temporary tunnel; the error path is separately verified locally. Browser visual inspection remains blocked.
+
+The backend AI commit `bd3715f` also passed the independent Linux setup/race-test/vet/build/retrieval workflow: [GitHub Actions](https://github.com/RenuBhati/policylens/actions/runs/37924993122).

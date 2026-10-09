@@ -41,3 +41,9 @@ Describe one tradeoff: a curated embedded pack keeps the demo reproducible; data
 - How would you support a second instance or a reverse proxy?
 - How do you upgrade an upstream policy without silently changing results?
 - How would you evaluate generated answers against their cited evidence?
+
+## Actual AI extension
+
+Start with `make run-ai` using the authenticated Cloudflare CLI. In Ask a question, compare **AI-generated answer** and **Source excerpts** for the same registry question; inspect citations, model name and reported usage. In Check a Pod, expand the privileged-container failure and choose **Explain this result with AI**. The server rechecks before explaining, and the raw Pod remains on the backend. Review the suggestion and manually rerun a corrected Pod to verify it.
+
+Show the baseline and current real-model evaluation, including a failed or rejected answer. Explain that valid citations identify available sources but do not prove all generated claims. Empty-evidence abstention happens before a model call. Read `AI.md` for the scope and demo budget.

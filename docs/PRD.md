@@ -172,3 +172,7 @@ Live cluster enforcement; universal security certification; full Pod Security St
 - Kubernetes Pod Security Standards: https://kubernetes.io/docs/concepts/security/pod-security-standards/
 - Ollama chat API: https://docs.ollama.com/api/chat
 - Future VPN collection: https://tailscale.com/docs/reference/examples/grants
+
+## Implemented AI demonstration extension — 9 October 2026
+
+The MVP now includes Cloudflare Workers AI generation through an authenticated server-side CLI, an excerpts/generated mode comparison, and an AI explanation action that re-executes Kyverno before obtaining a verified finding. Only verified status and public evidence from this action go to the model. Strict answer/citation validation, a 40-attempt process budget, model counters and a small real-model evaluation accompany the feature. See `AI.md` and the retained `ai-evaluation.json`; neither valid citation IDs nor keyword checks prove semantic faithfulness. Deterministic checks continue to decide pass/fail.

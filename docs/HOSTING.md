@@ -101,3 +101,7 @@ Local electricity/internet and any model/API usage are separate from Cloudflare 
 - Only the application is exposed; policy execution is fixed, bounded and independent of model output.
 - Public URL, backend availability expectations and deployment instructions are recorded in README.
 - The site and backend receive a final verification after deployment.
+
+## AI inference extension — 9 October 2026
+
+The local app can now use Cloudflare Workers AI for actual generated answers without changing the Go/Kyverno hosting arrangement. Run `make run-ai`, then `make share`. The provider uses the authenticated `cf` CLI and public evidence; the browser gets no account token. Free inference is limited by the account's daily allocation, and the app adds a 40-attempt per-process safeguard. This does not create permanent application compute or change the Pages plan. See `AI.md` for usage, privacy and production limitations.

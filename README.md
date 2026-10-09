@@ -2,7 +2,7 @@
 
 Understand a Kubernetes policy, check a concrete Pod configuration, and inspect the sources behind an explanation.
 
-This is a demonstrable Go/React engineering project using six real, unmodified Kyverno policies from a pinned public source revision. It includes a React/TypeScript UI, REST API, actual Kyverno validation, optional local LLM generation, Go SDK, CLI, tests, evaluation, container packaging and deployment examples.
+This is a demonstrable Go/React engineering project using six real, unmodified Kyverno policies from a pinned public source revision. It includes a React/TypeScript UI, REST API, actual Kyverno validation, Cloudflare Workers AI and optional local LLM generation, Go SDK, CLI, tests, evaluation, container packaging and deployment examples.
 
 ## Quick start
 
@@ -43,6 +43,17 @@ make share
 Open the HTTPS `trycloudflare.com` URL printed by `cf`. Keep both terminals and the computer running and online. The URL is temporary and changes when you start a new tunnel; this is a live demo, with no uptime guarantee. For another local port, use matching values: `ADDR=127.0.0.1:8081 make run` and `PREVIEW_ORIGIN=http://127.0.0.1:8081 make share`.
 
 A public Quick Tunnel preview was verified on 9 October 2026: static assets, browser-origin POST handling, real failing/corrected/missing-label checks and evidence questions. Cloudflare Pages is planned and has not been deployed. See `docs/HOSTING.md` for permanent frontend options and backend availability requirements. The current socket-peer limiter is shared by tunnel visitors; expect HTTP 429 after 60 combined POST requests per minute.
+
+## Real AI demonstration
+
+```sh
+# Uses the installed, authenticated cf CLI. Keep make share in another terminal.
+make run-ai
+```
+
+Choose **AI-generated answer** in Ask a question, compare it with **Source excerpts**, then run a Pod check and select **Explain this result with AI**. The server reruns Kyverno before generation; the model receives a verified rule status and public evidence, not the raw Pod. Generated prose cannot change validation decisions. Citations, model name, latency and reported usage are visible.
+
+Cloudflare inference is subject to its free daily allocation and account usage. The default local safeguard allows 40 attempts per UTC day per process; source-only answers remain available afterward. CLI startup adds latency, and a server restart resets this in-memory budget. See `docs/AI.md` for the architecture, privacy boundaries, evaluation and production tradeoffs.
 
 ## Answer modes
 
@@ -95,7 +106,8 @@ For frontend iteration, start the backend with `make run`, then run `npm run dev
 | GET | `/api/policies` | Six curated policies, explanations and definitions |
 | GET | `/api/examples` | Failing/corrected sample Pod YAML |
 | POST | `/api/check` | JSON body: `{"manifest":"Pod YAML"}` |
-| POST | `/api/ask` | JSON body: `{"question":"...","policy_id":"optional"}` |
+| POST | `/api/ask` | JSON body: `{"question":"...","policy_id":"optional","mode":"generated or excerpts"}` |
+| POST | `/api/explain` | Fresh engine check and generated explanation: `{"manifest":"Pod YAML","policy_id":"..."}` |
 | GET | `/metrics` | Prometheus request/check/question counters |
 
 Every response carries `X-Request-ID`. API errors include `error` and `request_id`. Policy failures return HTTP 200 with individual `fail` results; parser errors are 400, payload limits 413, missing engine 503, engine/provider errors 502, deadlines 504 and rate limits 429.
@@ -124,6 +136,7 @@ The runtime container uses a non-root UID, read-only filesystem and writable tem
 
 - `docs/PRD.md`: product requirements, acceptance criteria and roadmap.
 - `docs/DEMO.md`: five-minute interview walkthrough.
+- `docs/AI.md`: actual-model demo, evaluation and provider tradeoffs.
 - `docs/VIDEO.md`: narrated video contents and reproducible Kokoro/FFmpeg workflow.
 - `docs/evaluation.json`: recorded retrieval evaluation.
 - `internal/policy/sources/manifest.json`: source revision, pinned CLI and file digests.
