@@ -1,0 +1,72 @@
+# Example single-instance deployment. Build/load your image before applying.
+# Kyverno validates Pods offline; these policies are not installed in the cluster.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: policylens
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: policylens
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: policylens
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: policylens
+          image: policylens:0.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: policylens
+spec:
+  selector:
+    app.kubernetes.io/name: policylens
+  ports:
+    - port: 8080
+      targetPort: 8080

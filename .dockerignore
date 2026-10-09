@@ -1,0 +1,7 @@
+**/node_modules
+bin
+.cache
+.git
+.env
+docs
+internal/server/web/dist
