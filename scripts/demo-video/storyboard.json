@@ -1,38 +1,62 @@
 [
   {
-    "id": "intro", "section": "THE PROBLEM", "title": "Understand. Check. Explain.",
-    "narration": "PolicyLens connects a public Kubernetes policy to a clear explanation and a reproducible configuration check. This walkthrough uses real results from the running Go API, presented as designed visuals rather than an app screen recording."
+    "id": "intro",
+    "section": "POLICYLENS / AI DEMO",
+    "title": "Understand. Verify. Explain.",
+    "narration": "PolicyLens combines deterministic Kubernetes policy checks with real language model explanations. This demo shows actual Kyverno and Cloudflare Workers AI responses through designed visuals, rather than an app screen recording."
   },
   {
-    "id": "sources", "section": "01 / EXPLORE", "title": "Every rule has a source.",
+    "id": "sources",
+    "section": "01 / VERSIONED SOURCES",
+    "title": "Every rule has a source.",
     "narration": "The collection contains six unmodified Kyverno policies. It covers privileged containers, non-root execution, privilege escalation, image tags, registries and application labels. Each definition is pinned to a Git revision, with its original source link and file digest."
   },
   {
-    "id": "failing", "section": "02 / REPRODUCE", "title": "One Pod. Six violations.",
+    "id": "failing",
+    "section": "02 / REPRODUCE A FAILURE",
+    "title": "One Pod. Six violations.",
     "narration": "Start with the failing payment API Pod. It requests privileged access, allows root execution and privilege escalation, uses the latest image tag from an unapproved registry, and has no application label. Kyverno evaluates the manifest and returns six failures. A language model does not decide this result."
   },
   {
-    "id": "passing", "section": "03 / CORRECT", "title": "Correct the configuration.",
+    "id": "explain",
+    "section": "03 / EXPLAIN A FINDING",
+    "title": "AI explains a verified result.",
+    "narration": "Choose Explain this result with AI. The Go backend reruns Kyverno before asking the model to explain the selected failure. Only the verified rule status and public policy evidence go to the model. The raw Pod stays on the backend. The generated explanation cites the supporting passages."
+  },
+  {
+    "id": "passing",
+    "section": "04 / CORRECT AND RECHECK",
+    "title": "Correct the configuration.",
     "narration": "The corrected example disables privileged access and privilege escalation, requires non-root execution, uses an explicit image version from the example approved registry, and adds the application label. Running the same six policies again produces six passes, with no skipped rules or engine errors."
   },
   {
-    "id": "missing_label", "section": "04 / ISOLATE", "title": "A small change. A precise failure.",
-    "narration": "Now remove only the application label from the corrected Pod. Five policies still pass, and the label policy fails. This gives a concrete before-and-after example of regression diagnosis. These are recorded results from actual engine execution, not predicted outcomes."
+    "id": "answer",
+    "section": "05 / COMPARE ANSWER MODES",
+    "title": "Same evidence. Two answer modes.",
+    "narration": "Ask which registries this demo allows. Source excerpts show the retrieved policy passages. AI-generated answer uses Llama three point one, hosted by Cloudflare, to generate an answer from that evidence. Both use the same BM twenty five retrieval. Model details, latency and usage remain visible. Valid citation identifiers do not prove every claim is supported."
   },
   {
-    "id": "answer", "section": "05 / ASK", "title": "Keep the evidence visible.",
-    "narration": "Ask which image registries are allowed. PolicyLens retrieves supporting passages and links back to the pinned policy. The two registry names shown here are upstream examples. This demo uses source excerpts, not generated answers. Optional local language model generation is a separate integration."
+    "id": "abstention",
+    "section": "06 / ABSTAIN AND REJECT",
+    "title": "Make the boundaries visible.",
+    "narration": "Annual leave is outside the collection, so empty retrieval returns an abstention before calling a model. A question that tries to override the rules produces an invalid model answer and is rejected. This example shows an output check working; it does not prove general resistance to prompt injection."
   },
   {
-    "id": "abstention", "section": "06 / KNOW THE LIMIT", "title": "No evidence? Say so.",
-    "narration": "Ask how much annual leave you get. That question is outside this Kubernetes collection, so PolicyLens abstains instead of inventing an answer. The authored retrieval evaluation covers eighteen policy questions and six unrelated questions. That small test set does not establish general accuracy."
+    "id": "evaluation",
+    "section": "07 / EVALUATE REAL ANSWERS",
+    "title": "Measure. Inspect. Improve.",
+    "narration": "The retained real-model evaluation passed eight of ten question checks and both finding checks. The registry answer omitted required example wording, and the adversarial answer was rejected. Both failures remain in the report. The tests check citations, keywords and expected abstention. They do not establish general accuracy or semantic faithfulness."
   },
   {
-    "id": "engineering", "section": "07 / UNDER THE HOOD", "title": "A backend you can explain.",
-    "narration": "The React and TypeScript interface calls a Go REST service. A Go SDK and command line client use the same API. Kyverno runs with bounded inputs, concurrency and deadlines. Tests cover the API and real engine fixtures, while request IDs, readiness checks and metrics support troubleshooting."
+    "id": "engineering",
+    "section": "08 / RAG ARCHITECTURE",
+    "title": "A pipeline you can explain.",
+    "narration": "The Go service retrieves versioned evidence, invokes the model with a structured output contract, and validates its response. Kyverno determines pass or fail independently. The implementation bounds inputs, concurrency, deadlines and model attempts, with tests, request IDs and metrics. Suggestions are reviewed and manually rechecked."
   },
   {
-    "id": "closing", "section": "POLICYLENS / DEMO", "title": "Reproducible checks. Honest answers.",
-    "narration": "The complete application can be shared through a free Cloudflare tunnel while its host stays online. Validation covers this six-rule pack offline; it does not certify a cluster or enforce admission. PolicyLens demonstrates backend engineering, evidence retrieval and clear boundaries, with room to grow into a broader generative AI platform."
+    "id": "closing",
+    "section": "POLICYLENS / AI DEMO",
+    "title": "Real AI. Inspectable evidence.",
+    "narration": "PolicyLens demonstrates retrieval augmented generation, prompting, output validation, tool integration and honest evaluation. A free Cloudflare tunnel shares the application while its host stays online. Cloudflare model inference has usage limits. This six-rule offline check does not scan images for vulnerabilities, certify a cluster or enforce admission."
   }
 ]

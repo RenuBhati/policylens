@@ -56,7 +56,7 @@ This makes a small number of real model calls, so it requires a configured provi
 
 Sources: [Workers AI pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/), [model parameters](https://developers.cloudflare.com/workers-ai/models/llama-3.1-8b-instruct-fp8/), [JSON mode](https://developers.cloudflare.com/workers-ai/features/json-mode/).
 
-The existing narrated video captures the earlier source-only demo. It is not a recording of this new AI feature and should not be presented as one.
+The updated narrated AI walkthrough shows recorded real model answers, a verified-finding explanation, the source-excerpt comparison and the retained evaluation, including failed cases. It uses designed visuals of actual API responses, not an app screen recording. See `VIDEO.md` for the capture and local Kokoro workflow.
 
 ## Real-model results and limits
 

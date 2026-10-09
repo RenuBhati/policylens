@@ -137,7 +137,7 @@ The runtime container uses a non-root UID, read-only filesystem and writable tem
 - `docs/PRD.md`: product requirements, acceptance criteria and roadmap.
 - `docs/DEMO.md`: five-minute interview walkthrough.
 - `docs/AI.md`: actual-model demo, evaluation and provider tradeoffs.
-- `docs/VIDEO.md`: narrated video contents and reproducible Kokoro/FFmpeg workflow.
+- `docs/VIDEO.md`: narrated AI demo with actual model results and a reproducible Kokoro/FFmpeg workflow.
 - `docs/evaluation.json`: recorded retrieval evaluation.
 - `internal/policy/sources/manifest.json`: source revision, pinned CLI and file digests.
 - `internal/policy/sources/LICENSE`: original upstream Apache 2.0 license.
